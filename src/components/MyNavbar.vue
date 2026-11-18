@@ -10,7 +10,7 @@
   <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
     <div class="container-fluid">
       <router-link class="navbar-brand fw-bold" :to="{ name: 'MyHome' }">
-        <img src="logo.png" alt="Logo" width="30" class="d-inline-block align-text-top">
+        <img src="/logo.png" alt="Logo" width="30" class="d-inline-block align-text-top">
         御守屋
       </router-link>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">

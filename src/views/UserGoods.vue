@@ -17,7 +17,7 @@
                 class="list-group-item list-group-item-action"
                 :class="{ active: categoryFilter === cat }"
                 @click="categoryFilter = cat">
-                <img :src="require('@/assets/torii.png')" alt="icon" style="width:20px; height:20px;" class="me-2">
+                <img :src="toriiIcon" alt="icon" style="width:20px; height:20px;" class="me-2">
                 {{ cat }}
               </button>
             </div>
@@ -40,7 +40,7 @@
                   <div class="mb-3 flex-grow-1">
                     <div class="row">
                       <h5 class="card-title text-start">
-                        <img :src="require('@/assets/torii.png')" alt="icon" style="width:20px; height:20px;" class="me-2">
+                        <img :src="toriiIcon" alt="icon" style="width:20px; height:20px;" class="me-2">
                         {{ item.title }}</h5>
                     </div>
                     <div class="row">
@@ -101,7 +101,7 @@
      <!-- 右下固定購物車按鈕，直接路由跳轉 -->
     <router-link :to="{name:'UserCarts'}" class="cart-btn" title="前往購物車">
       <div>
-      <img :src="require('@/assets/carts.png')" alt="購物車" class="cart-icon">
+      <img :src="cartsIcon" alt="購物車" class="cart-icon">
       <span class="carts  bg-warning">{{ cartCount }}</span>
       </div>
     </router-link>
@@ -119,12 +119,16 @@ import MyFooter from '@/components/MyFooter.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import { API } from '@/constants/api'
 import { notify } from '@/components/MessageToast.vue'
+import toriiIcon from '@/assets/torii.png'
+import cartsIcon from '@/assets/carts.png'
 
 export default {
   name:'UserGoods',
   components: { MyNavbar, MyFooter, LoadingSpinner,HeroCarousel },
   data() {
     return {
+      toriiIcon,
+      cartsIcon,
       products: [],
       categories: [
         "北海道・東北（北部）",
