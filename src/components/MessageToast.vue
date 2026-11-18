@@ -22,10 +22,8 @@
 </template>
 
 <script>
-import { nextTick } from 'vue'
-import { Toast } from 'bootstrap'
-
-// 讓各檔案自行 import 使用（不走 globalProperties）
+// 讓各檔案自行 import 使用（不走 globalProperties）；
+// 跟下面 <script setup> 共用同一個模組作用域，不用再 import 一次
 const listeners = new Set()
 
 export function notify(payload) {
@@ -40,71 +38,72 @@ notify.error = (message, options = {}) =>
 
 notify.warn = (message, options = {}) =>
   notify({ type: 'warning', title: options.title ?? '提醒', message, ...options })
+</script>
 
-export default {
-  name: 'MessageToast',
-  data() {
-    return {
-      toasts: [],
-      toastEls: new Map(),
-      toastInstances: new Map(),
-      off: null,
-    }
-  },
-  methods: {
-    setToastEl(id, el) {
-      if (el) this.toastEls.set(id, el)
-    },
-    pushToast(payload) {
-      const p = payload || {}
-      const id = `${Date.now()}_${Math.random().toString(16).slice(2)}`
-      const toast = {
-        id,
-        type: p.type || 'secondary', // success | danger | warning | info | primary | secondary
-        title: p.title ?? '',
-        message: p.message ?? '',
-        delay: Number.isFinite(p.delay) ? p.delay : 2500,
-        autohide: p.autohide !== false,
-      }
+<script setup>
+import { nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { Toast } from 'bootstrap'
 
-      this.toasts.push(toast)
+const toasts = ref([])
+const toastEls = new Map()
+const toastInstances = new Map()
 
-      nextTick(() => {
-        const el = this.toastEls.get(id)
-        if (!el) return
-
-        const instance = Toast.getOrCreateInstance(el, {
-          delay: toast.delay,
-          autohide: toast.autohide,
-        })
-        this.toastInstances.set(id, instance)
-
-        el.addEventListener(
-          'hidden.bs.toast',
-          () => {
-            this.toastInstances.delete(id)
-            this.toastEls.delete(id)
-            this.toasts = this.toasts.filter((x) => x.id !== id)
-          },
-          { once: true }
-        )
-
-        instance.show()
-      })
-    },
-    hide(id) {
-      const inst = this.toastInstances.get(id)
-      if (inst) inst.hide()
-    },
-  },
-  mounted() {
-    const handler = (payload) => this.pushToast(payload)
-    listeners.add(handler)
-    this.off = () => listeners.delete(handler)
-  },
-  unmounted() {
-    if (this.off) this.off()
-  },
+function setToastEl(id, el) {
+  if (el) toastEls.set(id, el)
 }
+
+function pushToast(payload) {
+  const p = payload || {}
+  const id = `${Date.now()}_${Math.random().toString(16).slice(2)}`
+  const toast = {
+    id,
+    type: p.type || 'secondary', // success | danger | warning | info | primary | secondary
+    title: p.title ?? '',
+    message: p.message ?? '',
+    delay: Number.isFinite(p.delay) ? p.delay : 2500,
+    autohide: p.autohide !== false,
+  }
+
+  toasts.value.push(toast)
+
+  nextTick(() => {
+    const el = toastEls.get(id)
+    if (!el) return
+
+    const instance = Toast.getOrCreateInstance(el, {
+      delay: toast.delay,
+      autohide: toast.autohide,
+    })
+    toastInstances.set(id, instance)
+
+    el.addEventListener(
+      'hidden.bs.toast',
+      () => {
+        toastInstances.delete(id)
+        toastEls.delete(id)
+        toasts.value = toasts.value.filter((x) => x.id !== id)
+      },
+      { once: true }
+    )
+
+    instance.show()
+  })
+}
+
+function hide(id) {
+  const inst = toastInstances.get(id)
+  if (inst) inst.hide()
+}
+
+let off = null
+onMounted(() => {
+  const handler = (payload) => pushToast(payload)
+  listeners.add(handler)
+  off = () => listeners.delete(handler)
+})
+
+onUnmounted(() => {
+  if (off) off()
+})
 </script>
 

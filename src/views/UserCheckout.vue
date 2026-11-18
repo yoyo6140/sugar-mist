@@ -224,104 +224,95 @@
 </template>
 
 
-<script>
-import { Form, Field, ErrorMessage, defineRule, configure } from 'vee-validate';
-import * as AllRules from '@vee-validate/rules';
-import { localize, setLocale } from '@vee-validate/i18n';
-import zhTW from '@vee-validate/i18n/dist/locale/zh_TW.json';
-import MyNavbar from '@/components/MyNavbar.vue';
+<script setup>
+import { ref } from 'vue'
+import { Form, Field, ErrorMessage, defineRule, configure } from 'vee-validate'
+import * as AllRules from '@vee-validate/rules'
+import { localize, setLocale } from '@vee-validate/i18n'
+import zhTW from '@vee-validate/i18n/dist/locale/zh_TW.json'
+import MyNavbar from '@/components/MyNavbar.vue'
 import { API } from '@/constants/api'
 import { notify } from '@/components/MessageToast.vue'
 
-export default {
-  name:'UserCheck',
-  components: {  MyNavbar,Form, Field, ErrorMessage },
-  data() {
-    return {
-      order: { 
-      },
-      step: 1,
-      form: {
-        user: {},
-        message: ''
+const order = ref({})
+const step = ref(1)
+const form = ref({
+  user: {},
+  message: ''
+})
+
+function createOrder() {
+  order.value.user = { ...form.value.user }
+  order.value.message = form.value.message
+
+  // Step1 送出訂單 API
+  fetch(API.order(), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data: order.value }),
+  })
+    .then((r) => r.json())
+    .then((res) => {
+      if (res.success) {
+        const orderId = res.orderId
+
+        // ✅ 再呼叫一次完整訂單 API
+        return fetch(API.orderById(orderId)).then((r) => r.json())
       }
-    }
-  },
-  methods: {
-     createOrder() {
-      this.order.user = { ...this.form.user };
-      this.order.message = this.form.message;
+      notify.error('建立訂單失敗，請稍後再試')
+      return null
+    })
+    .then((detailRes) => {
+      if (!detailRes) return
+      order.value = detailRes.order
+      step.value = 2
+    })
+    .catch(() => {
+      notify.error('送出訂單時發生錯誤')
+    })
+}
 
-      // Step1 送出訂單 API
-      fetch(API.order(), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: this.order }),
-      })
-        .then((r) => r.json())
-        .then((res) => {
-          if (res.success) {
-            const orderId = res.orderId
-
-            // ✅ 再呼叫一次完整訂單 API
-            return fetch(API.orderById(orderId)).then((r) => r.json())
-          }
-          notify.error('建立訂單失敗，請稍後再試')
-          return null
-        })
-        .then((detailRes) => {
-          if (!detailRes) return
-          this.order = detailRes.order
-          this.step = 2
-        })
-        .catch(() => {
-          notify.error('送出訂單時發生錯誤')
-        })
-    },
-    payOrder() {
-      fetch(API.pay(this.order.id), { method: 'POST' })
-        .then((r) => r.json())
-        .then(res => {
-        if (res.success) {
-          this.order.is_paid = true;
-          this.step = 3;
-        } else {
-          notify.error(res.message || '付款失敗')
-        }
-      })
-        .catch(() => {
-          notify.error('付款失敗')
-        });
-    }
-  },
-  created() {
-    // 初始化 localStorage 資料
-    const cartData = localStorage.getItem('checkoutCart')
-    if (cartData) {
-      try {
-        const parsed = JSON.parse(cartData)
-        this.order = {
-          ...this.order,
-          ...parsed,
-          user: { ...this.order.user, ...(parsed.user || {}) }
-        }
-      } catch (e) {
-        // ignore invalid cached data
+function payOrder() {
+  fetch(API.pay(order.value.id), { method: 'POST' })
+    .then((r) => r.json())
+    .then(res => {
+      if (res.success) {
+        order.value.is_paid = true
+        step.value = 3
+      } else {
+        notify.error(res.message || '付款失敗')
       }
+    })
+    .catch(() => {
+      notify.error('付款失敗')
+    })
+}
+
+// 初始化 localStorage 資料
+const cartData = localStorage.getItem('checkoutCart')
+if (cartData) {
+  try {
+    const parsed = JSON.parse(cartData)
+    order.value = {
+      ...order.value,
+      ...parsed,
+      user: { ...order.value.user, ...(parsed.user || {}) }
     }
-
-    // vee-validate
-    Object.keys(AllRules)
-      .filter(rule => typeof AllRules[rule] === 'function')
-      .forEach(rule => defineRule(rule, AllRules[rule]));
-
-    configure({
-      generateMessage: localize({ zh_TW: zhTW }),
-      validateOnInput: true,
-    });
-    setLocale('zh_TW');
+  } catch (e) {
+    // ignore invalid cached data
   }
 }
+
+// vee-validate
+Object.keys(AllRules)
+  .filter(rule => typeof AllRules[rule] === 'function')
+  .forEach(rule => defineRule(rule, AllRules[rule]))
+
+configure({
+  generateMessage: localize({ zh_TW: zhTW }),
+  validateOnInput: true,
+})
+setLocale('zh_TW')
 </script>
 
 

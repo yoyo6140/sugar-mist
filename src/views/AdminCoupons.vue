@@ -50,120 +50,109 @@
   <my-pagination :pages="pagination" @emit-pages="getCoupons"></my-pagination>
 </template>
 
-<script>
-import LoadingSpinner from '@/components/LoadingSpinner.vue';
-import CouponModal from '../components/couponModals.vue';
-import MyPagination from '@/components/MyPagination.vue';
+<script setup>
+import { ref } from 'vue'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
+import CouponModal from '../components/couponModals.vue'
+import MyPagination from '@/components/MyPagination.vue'
 import { API, adminHeaders } from '@/constants/api'
 import { notify } from '@/components/MessageToast.vue'
 
-export default {
-  name:'MyCoupons',
-  components: { CouponModal,LoadingSpinner,MyPagination },
+const coupons = ref([])
+const tempCoupon = ref({})
+const isLoad = ref(true)
+const isNew = ref(false)
+const pagination = ref({})
+const couponModal = ref(null)
 
-  data() {
-    return {
-      coupons: [],  
-      tempCoupon: {},
-      isLoad: true,
-      isNew: false,
-      pagination:{}
-    };
-  },
+// timestamp → YYYY-MM-DD
+function formatDate(timestamp) {
+  if (!timestamp) return ''
+  return new Date(timestamp * 1000).toISOString().split('T')[0]
+}
 
-  methods: {
-    // timestamp → YYYY-MM-DD
-    formatDate(timestamp) {
-      if (!timestamp) return '';
-      return new Date(timestamp * 1000).toISOString().split('T')[0];
-    },
-
-    openCouponModal(isNew, item = null) {
-      this.isNew = isNew;
-      if (this.isNew) {
-        this.tempCoupon = { 
-          title: '',
-          code: '',
-          percent: 100,
-          is_enabled: 1,
-          due_date: Math.floor(Date.now() / 1000) // 現在 timestamp
-        };
-      } else if(item) {
-        this.tempCoupon = { ...item }; // 淺拷貝
-      }
-      this.$refs.couponModal.showModal();
-    },
-
-    async getCoupons(page = 1 ) {
-      try {
-        const httpRes = await fetch(API.adminCoupons(page), {
-          headers: adminHeaders(),
-        })
-        const res = await httpRes.json()
-        if(res.success){
-          this.coupons = res.coupons
-          this.pagination = res.pagination
-        } else {
-          notify.error(res.message || '取得優惠券失敗')
-        }
-      } catch(err) {
-        notify.error('取得優惠券發生錯誤')
-      } finally {
-        this.isLoad = false;
-      }
-    },
-
-    async updateCoupon(tempCoupon) {
-      const url = this.isNew ? API.adminCoupon() : API.adminCouponById(tempCoupon.id)
-      const method = this.isNew ? 'POST' : 'PUT'
-
-      try{
-        const httpRes = await fetch(url, {
-          method,
-          headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
-          body: JSON.stringify({ data: tempCoupon }),
-        })
-        const res = await httpRes.json()
-
-        if(res.success){
-          notify.success(this.isNew ? '新增優惠券成功' : '編輯優惠券成功')
-          this.getCoupons();
-          this.$refs.couponModal.hideModal();
-        } else {
-          notify.error(res.message || '操作失敗')
-        }
-      } catch(err){
-        notify.error('操作發生錯誤')
-      }
-    },
-
-    async delCoupon(item) {
-      const confirmDel = confirm(`確定要刪除優惠券 "${item.title}" 嗎？`);
-      if(!confirmDel) return;
-
-      this.isLoad = true;
-      try {
-        const httpRes = await fetch(API.adminCouponById(item.id), {
-          method: 'DELETE',
-          headers: adminHeaders(),
-        })
-        const res = await httpRes.json()
-        if(res.success){
-          notify.success('刪除成功')
-          this.getCoupons();
-        } else {
-          notify.error(res.message || '刪除失敗')
-        }
-      } catch(err){
-        notify.error('刪除發生錯誤')
-      } finally {
-        this.isLoad = false;
-      }
+function openCouponModal(isNewFlag, item = null) {
+  isNew.value = isNewFlag
+  if (isNew.value) {
+    tempCoupon.value = {
+      title: '',
+      code: '',
+      percent: 100,
+      is_enabled: 1,
+      due_date: Math.floor(Date.now() / 1000) // 現在 timestamp
     }
-  },
-
-  created(){
-    this.getCoupons();
+  } else if (item) {
+    tempCoupon.value = { ...item } // 淺拷貝
   }
-};
+  couponModal.value.showModal()
+}
+
+async function getCoupons(page = 1) {
+  try {
+    const httpRes = await fetch(API.adminCoupons(page), {
+      headers: adminHeaders(),
+    })
+    const res = await httpRes.json()
+    if (res.success) {
+      coupons.value = res.coupons
+      pagination.value = res.pagination
+    } else {
+      notify.error(res.message || '取得優惠券失敗')
+    }
+  } catch (err) {
+    notify.error('取得優惠券發生錯誤')
+  } finally {
+    isLoad.value = false
+  }
+}
+
+async function updateCoupon(coupon) {
+  const url = isNew.value ? API.adminCoupon() : API.adminCouponById(coupon.id)
+  const method = isNew.value ? 'POST' : 'PUT'
+
+  try {
+    const httpRes = await fetch(url, {
+      method,
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: coupon }),
+    })
+    const res = await httpRes.json()
+
+    if (res.success) {
+      notify.success(isNew.value ? '新增優惠券成功' : '編輯優惠券成功')
+      getCoupons()
+      couponModal.value.hideModal()
+    } else {
+      notify.error(res.message || '操作失敗')
+    }
+  } catch (err) {
+    notify.error('操作發生錯誤')
+  }
+}
+
+async function delCoupon(item) {
+  const confirmDel = confirm(`確定要刪除優惠券 "${item.title}" 嗎？`)
+  if (!confirmDel) return
+
+  isLoad.value = true
+  try {
+    const httpRes = await fetch(API.adminCouponById(item.id), {
+      method: 'DELETE',
+      headers: adminHeaders(),
+    })
+    const res = await httpRes.json()
+    if (res.success) {
+      notify.success('刪除成功')
+      getCoupons()
+    } else {
+      notify.error(res.message || '刪除失敗')
+    }
+  } catch (err) {
+    notify.error('刪除發生錯誤')
+  } finally {
+    isLoad.value = false
+  }
+}
+
+getCoupons()
 </script>

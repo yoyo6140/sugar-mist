@@ -1,6 +1,6 @@
 <template>
   <!-- Modal -->
-  <div class="modal fade" tabindex="-1" ref="modal">
+  <div class="modal fade" tabindex="-1" ref="modalRef">
     <div class="modal-dialog modal-xl">
       <div class="modal-content border-0">
         <div class="modal-header bg-dark text-white">
@@ -92,107 +92,109 @@
   </div>
 </template>
 
-<script>
-import { Modal } from 'bootstrap/dist/js/bootstrap.bundle.min';
+<script setup>
+import { ref, watch, onMounted } from 'vue'
+import { Modal } from 'bootstrap/dist/js/bootstrap.bundle.min'
 import { API, adminHeaders } from '@/constants/api'
 import { notify } from '@/components/MessageToast.vue'
 
-export default {
-  name: 'ProductEditModal',
-  props: {
-    product: { 
-        type: Object, 
-        default: () => ({})  //selectedProduct 拷貝完原數據後 傳進來
+const props = defineProps({
+  product: {
+    type: Object,
+    default: () => ({}) //selectedProduct 拷貝完原數據後 傳進來
+  }
+})
+const emit = defineEmits(['refresh-products'])
+
+const modalRef = ref(null)
+const fileInput = ref(null)
+let modal = null
+const tempProduct = ref({})
+const isUploading = ref(false)
+
+watch(
+  () => props.product,
+  (val) => {
+    // 如果 product 有資料就拷貝一份到 tempProduct
+    if (val && Object.keys(val).length > 0) {
+      tempProduct.value = { ...val }
+    }
+    // 如果 product 沒資料，就初始化一個空產品
+    else {
+      tempProduct.value = { is_enabled: 0 }
     }
   },
-  emits: ['refresh-products'],
-  data() {
-    return {
-      modal: null,
-      tempProduct: {},
-      isUploading: false
+  { immediate: true }
+)
+
+onMounted(() => {
+  modal = new Modal(modalRef.value)
+})
+
+function showModal() {
+  modal.show()
+}
+
+function hideModal() {
+  document.activeElement.blur()
+  modal.hide()
+  tempProduct.value = { is_enabled: 0 }
+  isUploading.value = false
+  if (fileInput.value) fileInput.value.value = null
+}
+
+async function confirmEdit() {
+  if (!tempProduct.value.imageUrl) {
+    notify.warn('請先上傳圖片或輸入圖片網址')
+    return
+  }
+
+  try {
+    const httpRes = await fetch(API.adminProduct(tempProduct.value.id), {
+      method: 'PUT',
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: tempProduct.value }),
+    })
+    const res = await httpRes.json()
+
+    if (res.success) {
+      hideModal()
+      emit('refresh-products')
+    } else {
+      notify.error(res.message || '修改產品失敗')
     }
-  },
-  watch: {
-    product: {
-      immediate: true,
-      handler(val) {
-        // 如果 product 有資料就拷貝一份到 tempProduct
-        if (val && Object.keys(val).length > 0) {
-          this.tempProduct = { ...val };
-        } 
-        // 如果 product 沒資料，就初始化一個空產品
-        else {
-          this.tempProduct = { is_enabled: 0 };
-        }
-      }
-    }
-  },
-  mounted() {
-    this.modal = new Modal(this.$refs.modal);
-  },
-  methods: {
-    showModal() { 
-      this.modal.show() 
-    },
-    hideModal() {
-      document.activeElement.blur();
-      this.modal.hide();
-      this.tempProduct = { is_enabled: 0 };
-      this.isUploading = false;
-      if(this.$refs.fileInput) this.$refs.fileInput.value = null;
-    },
-    async confirmEdit() {
-      if(!this.tempProduct.imageUrl) {
-        notify.warn('請先上傳圖片或輸入圖片網址')
-        return;
-      }
-
-      try {
-        const httpRes = await fetch(API.adminProduct(this.tempProduct.id), {
-          method: 'PUT',
-          headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
-          body: JSON.stringify({ data: this.tempProduct }),
-        })
-        const res = await httpRes.json()
-
-        if(res.success) {
-          this.hideModal();
-          this.$emit('refresh-products');
-        } else {
-          notify.error(res.message || '修改產品失敗')
-        }
-      } catch(err) {
-        notify.error('修改產品失敗')
-      }
-    },
-    async uploadFile() {
-      const file = this.$refs.fileInput.files[0];
-      if(!file) return;
-
-      const formData = new FormData();
-      formData.append('file-to-upload', file);
-      this.isUploading = true;
-
-      try {
-        const httpRes = await fetch(API.adminUpload(), {
-          method: 'POST',
-          headers: adminHeaders(),
-          body: formData,
-        })
-        const res = await httpRes.json()
-
-        if(res.success) {
-          this.tempProduct.imageUrl = res.imageUrl;
-        } else {
-          notify.error(res.message || '檔案上傳失敗')
-        }
-      } catch(err) {
-        notify.error('上傳圖片失敗')
-      } finally {
-        this.isUploading = false;
-      }
-    }
+  } catch (err) {
+    notify.error('修改產品失敗')
   }
 }
+
+async function uploadFile() {
+  const file = fileInput.value.files[0]
+  if (!file) return
+
+  const formData = new FormData()
+  formData.append('file-to-upload', file)
+  isUploading.value = true
+
+  try {
+    const httpRes = await fetch(API.adminUpload(), {
+      method: 'POST',
+      headers: adminHeaders(),
+      body: formData,
+    })
+    const res = await httpRes.json()
+
+    if (res.success) {
+      tempProduct.value.imageUrl = res.imageUrl
+    } else {
+      notify.error(res.message || '檔案上傳失敗')
+    }
+  } catch (err) {
+    notify.error('上傳圖片失敗')
+  } finally {
+    isUploading.value = false
+  }
+}
+
+defineExpose({ showModal })
 </script>

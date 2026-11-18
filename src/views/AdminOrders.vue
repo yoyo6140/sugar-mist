@@ -61,93 +61,86 @@
   <my-pagination :pages="pagination" @emit-pages="getOrders"></my-pagination>
 </template>
 
-<script>
-import LoadingSpinner from '@/components/LoadingSpinner.vue';
-import { Modal } from 'bootstrap/dist/js/bootstrap.bundle.min';
-import MyPagination from '@/components/MyPagination.vue';
+<script setup>
+import { ref } from 'vue'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
+import { Modal } from 'bootstrap/dist/js/bootstrap.bundle.min'
+import MyPagination from '@/components/MyPagination.vue'
 import { API, adminHeaders } from '@/constants/api'
 import { notify } from '@/components/MessageToast.vue'
 
-export default {
-  name:'AdminOrders',
-  components:{MyPagination,LoadingSpinner},
-  emits:['update-product'],
-  data() {
-    return {
-      isLoad: true,
-      orders: [],
-      selectedOrder: {
-        user: {},
-        products: [],
-        message: '',
-        is_paid: false,
-        id: ''
-      },
-      modalInstance: null,
-      pagination:{},
-    };
-  },
-  methods: {
-    // 取得訂單
-    async getOrders(page = 1) {
-      this.isLoad = true;
-      try {
-        const httpRes = await fetch(API.adminOrders(page), {
-          headers: adminHeaders(),
-        })
-        const res = await httpRes.json()
+defineEmits(['update-product'])
 
-        if (res.success) {
-          this.orders = res.orders
-          this.pagination = res.pagination
-        } else {
-          notify.error(res.message || '取得訂單失敗')
-        }
-      } catch (err) {
-        notify.error('網路錯誤')
-      } finally {
-        this.isLoad = false;
-      }
-    },
+const isLoad = ref(true)
+const orders = ref([])
+const selectedOrder = ref({
+  user: {},
+  products: [],
+  message: '',
+  is_paid: false,
+  id: ''
+})
+const orderModal = ref(null)
+let modalInstance = null
+const pagination = ref({})
 
-    // 刪除訂單
-    async deleteOrder(orderId) {
-      if (!confirm('確定要刪除此訂單嗎？')) return;
+// 取得訂單
+async function getOrders(page = 1) {
+  isLoad.value = true
+  try {
+    const httpRes = await fetch(API.adminOrders(page), {
+      headers: adminHeaders(),
+    })
+    const res = await httpRes.json()
 
-      try {
-        const httpRes = await fetch(API.adminOrder(orderId), {
-          method: 'DELETE',
-          headers: adminHeaders(),
-        })
-        const res = await httpRes.json()
-
-        if (res.success) {
-          notify.success('刪除成功')
-          // 刪除成功後重新取得訂單
-          this.getOrders();
-        } else {
-          notify.error(res.message || '刪除失敗')
-        }
-      } catch (err) {
-        notify.error('網路錯誤，刪除失敗')
-      }
-    },
-
-    openModal(order) {
-      this.selectedOrder = order;
-      if (!this.modalInstance) {
-        this.modalInstance = new Modal(this.$refs.orderModal);
-      }
-      this.modalInstance.show();
-    },
-
-    closeModal() {
-      if (this.modalInstance) this.modalInstance.hide();
-      document.activeElement.blur();
+    if (res.success) {
+      orders.value = res.orders
+      pagination.value = res.pagination
+    } else {
+      notify.error(res.message || '取得訂單失敗')
     }
-  },
-  created() {
-    this.getOrders();
+  } catch (err) {
+    notify.error('網路錯誤')
+  } finally {
+    isLoad.value = false
   }
-};
+}
+
+// 刪除訂單
+async function deleteOrder(orderId) {
+  if (!confirm('確定要刪除此訂單嗎？')) return
+
+  try {
+    const httpRes = await fetch(API.adminOrder(orderId), {
+      method: 'DELETE',
+      headers: adminHeaders(),
+    })
+    const res = await httpRes.json()
+
+    if (res.success) {
+      notify.success('刪除成功')
+      // 刪除成功後重新取得訂單
+      getOrders()
+    } else {
+      notify.error(res.message || '刪除失敗')
+    }
+  } catch (err) {
+    notify.error('網路錯誤，刪除失敗')
+  }
+}
+
+function openModal(order) {
+  selectedOrder.value = order
+  if (!modalInstance) {
+    modalInstance = new Modal(orderModal.value)
+  }
+  modalInstance.show()
+}
+
+function closeModal() {
+  if (modalInstance) modalInstance.hide()
+  document.activeElement.blur()
+}
+
+getOrders()
 </script>

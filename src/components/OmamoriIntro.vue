@@ -43,21 +43,10 @@
   </section>
 </template>
 
-<script>
+<script setup>
 import omamoriInfo1 from '@/assets/omamoriinfo-1.png'
 import omamoriInfo2 from '@/assets/omamoriinfo-2.png'
 import omamoriInfo3 from '@/assets/omamoriinfo-3.png'
-
-export default {
-  name: "OmamoriCulture",
-  data() {
-    return {
-      omamoriInfo1,
-      omamoriInfo2,
-      omamoriInfo3,
-    }
-  }
-}
 </script>
 
 <style scoped>

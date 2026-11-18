@@ -4,13 +4,8 @@
 
 </template>
 
-<script>
+<script setup>
 import MessageToast from '@/components/MessageToast.vue'
-
-export default {
-  name: 'App',
-  components: { MessageToast },
-}
 </script>
 
 <style>

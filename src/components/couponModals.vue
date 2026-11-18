@@ -1,5 +1,5 @@
 <template>
-  <div class="modal fade" id="couponModal" tabindex="-1" ref="modal">
+  <div class="modal fade" id="couponModal" tabindex="-1" ref="modalRef">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
@@ -39,50 +39,50 @@
   </div>
 </template>
 
-<script>
-import { Modal } from 'bootstrap';
+<script setup>
+import { ref, watch, onMounted } from 'vue'
+import { Modal } from 'bootstrap'
 
-export default {
-  name:'CouponModal',
-  props:{ coupon:{} },
-  data() {
-    return {
-      tempCoupon:{},
-      due_date:''
-    };
-  },
-  emits:['update-coupon'],
-  mounted() {
-    this.modalInstance = new Modal(this.$refs.modal, { backdrop:'static' });
-  },
-  watch:{
-    coupon:{
-      handler(newVal){
-        if(!newVal) return;
-        this.tempCoupon = { ...newVal };
-        if(this.tempCoupon.due_date){
-          this.due_date = new Date(this.tempCoupon.due_date * 1000)
-            .toISOString().split('T')[0];
-        }
-      },
-      immediate:true
-    },
-    due_date(newVal){
-      if(newVal){
-        this.tempCoupon.due_date = Math.floor(new Date(newVal)/1000);
-      }
+const props = defineProps({ coupon: {} })
+defineEmits(['update-coupon'])
+
+const modalRef = ref(null)
+let modalInstance = null
+const tempCoupon = ref({})
+const due_date = ref('')
+
+onMounted(() => {
+  modalInstance = new Modal(modalRef.value, { backdrop: 'static' })
+})
+
+watch(
+  () => props.coupon,
+  (newVal) => {
+    if (!newVal) return
+    tempCoupon.value = { ...newVal }
+    if (tempCoupon.value.due_date) {
+      due_date.value = new Date(tempCoupon.value.due_date * 1000)
+        .toISOString().split('T')[0]
     }
   },
-  methods:{
-    showModal(){ 
-        this.modalInstance.show(); 
-    },
-    hideModal(){ 
+  { immediate: true }
+)
 
-        const activeEl = document.activeElement;
-        if(this.$refs.modal.contains(activeEl)) activeEl.blur();
-        this.modalInstance.hide(); 
-    }
+watch(due_date, (newVal) => {
+  if (newVal) {
+    tempCoupon.value.due_date = Math.floor(new Date(newVal) / 1000)
   }
-};
+})
+
+function showModal() {
+  modalInstance.show()
+}
+
+function hideModal() {
+  const activeEl = document.activeElement
+  if (modalRef.value.contains(activeEl)) activeEl.blur()
+  modalInstance.hide()
+}
+
+defineExpose({ showModal, hideModal })
 </script>

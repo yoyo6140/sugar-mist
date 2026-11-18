@@ -16,7 +16,9 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { onMounted, ref, watch } from "vue";
+import { useRoute } from "vue-router";
 import MyNavbar from "@/components/MyNavbar.vue";
 import HeroCarousel from "@/components/HeroCarousel.vue";
 import OmamoriIntro from "@/components/OmamoriIntro.vue";
@@ -25,55 +27,41 @@ import LoadingSpinner from "@/components/LoadingSpinner.vue";
 import { API } from "@/constants/api";
 import buyIcon from "@/assets/buy.png";
 
-export default {
-  name: "MyHome",
-  components: {
-    MyNavbar,
-    HeroCarousel,
-    OmamoriIntro,
-    MyFooter,
-    LoadingSpinner,
-  },
-  data() {
-    return {
-      buyIcon,
-      isLoad: true, // 初始為 true，表示頁面正在載入
-      cartCount: 0,
-    };
-  },
-  watch: {
-    $route() {
-      // 每次路由變化都重置 isLoad
-      this.isLoad = true;
-      setTimeout(() => {
-        this.isLoad = false;
-      }, 500); // 你的特效持續時間
-      this.updateCartCount();
-    },
-  },
-  mounted() {
-    // 模擬頁面載入完成，2秒後關閉 spinner
-    setTimeout(() => {
-      this.isLoad = false;
-    }, 2000);
-    this.updateCartCount();
-  },
-  methods: {
-    async updateCartCount() {
-      try {
-        const httpRes = await fetch(API.cart());
-        const res = await httpRes.json();
-        const carts = res?.data?.carts || [];
-        this.cartCount = carts.reduce(
-          (total, item) => total + (item.qty || 0),
-          0
-        );
-      } catch {
-        this.cartCount = 0;
-      }
-    },
-  },
-};
+const route = useRoute();
+
+const isLoad = ref(true); // 初始為 true，表示頁面正在載入
+const cartCount = ref(0);
+
+async function updateCartCount() {
+  try {
+    const httpRes = await fetch(API.cart());
+    const res = await httpRes.json();
+    const carts = res?.data?.carts || [];
+    cartCount.value = carts.reduce(
+      (total, item) => total + (item.qty || 0),
+      0
+    );
+  } catch {
+    cartCount.value = 0;
+  }
+}
+
+// 每次路由變化都重置 isLoad
+watch(route, () => {
+  isLoad.value = true;
+  setTimeout(() => {
+    isLoad.value = false;
+  }, 500); // 你的特效持續時間
+  updateCartCount();
+});
+
+onMounted(() => {
+  // 模擬頁面載入完成，2秒後關閉 spinner
+  setTimeout(() => {
+    isLoad.value = false;
+  }, 2000);
+  updateCartCount();
+});
 </script>
 
 <style scoped>

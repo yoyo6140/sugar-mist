@@ -23,17 +23,15 @@
   </nav>
 </template>
 
-<script>
-import Cookies from 'js-cookie';
-export default {
-    name:'MyNavbar',
-     methods: {
-        logout() {
-            Cookies.remove('token')
-            this.$router.push('/login')
-        }
-    }
+<script setup>
+import Cookies from 'js-cookie'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
+
+function logout() {
+  Cookies.remove('token')
+  router.push('/login')
 }
 </script>
 

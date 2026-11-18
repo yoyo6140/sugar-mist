@@ -26,14 +26,11 @@
   </nav>
 </template>
 
-<script>
-export default {
-    name: 'MyPagination',
-    props: ['pages'],
-    methods: {
-        updatePage(page) {
-            this.$emit('emit-pages', page);
-        }
-    }
+<script setup>
+defineProps(['pages'])
+const emit = defineEmits(['emit-pages'])
+
+function updatePage(page) {
+  emit('emit-pages', page)
 }
 </script>

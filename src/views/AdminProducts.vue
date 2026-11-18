@@ -87,75 +87,70 @@
   <MyPagination :pages="pagination" @emit-pages="getProducts"></MyPagination>
 </template>
 
-<script>
-import LoadingSpinner from "@/components/LoadingSpinner.vue";
-import ProductCreateModal from "@/components/ProductCreateModal.vue";
-import ProductEditModal from "@/components/ProductEditModal.vue";
-import MyPagination from "@/components/MyPagination.vue";
+<script setup>
+import { ref } from 'vue'
+import LoadingSpinner from "@/components/LoadingSpinner.vue"
+import ProductCreateModal from "@/components/ProductCreateModal.vue"
+import ProductEditModal from "@/components/ProductEditModal.vue"
+import MyPagination from "@/components/MyPagination.vue"
 import { API, adminHeaders } from '@/constants/api'
 import { notify } from '@/components/MessageToast.vue'
-export default {
-  name: "ProductList",
-  components:{LoadingSpinner,ProductCreateModal,ProductEditModal,MyPagination},
-  data() {
-    return {
-      isLoad: true,
-      products: [],
-      pagination:{},
-      selectedProduct: {}
-    };
-  },
-  methods: {
-    async getProducts(page = 1) {
-      this.isLoad = true;
-      try {
-        const httpRes = await fetch(API.adminProducts(page), {
-          headers: adminHeaders(),
-        })
-        const res = await httpRes.json()
 
-        if (res.success) {
-          this.products = res.products
-          this.pagination = res.pagination
-        } else {
-          notify.error(res.message || '取得產品失敗')
-        }
-      } catch (err) {
-        notify.error('網路錯誤')
-      } finally {
-        this.isLoad = false;
-      }
-    },
-    openEdit(item) {
-      this.selectedProduct = { ...item };        // 複製產品資料給 Modal
-      this.$refs.editModal.showModal();          // 彈出編輯 Modal
-    },
-    async deleteProduct(id) {
-      const isConfirm = confirm('確定要刪除這個產品嗎？');
-      if (!isConfirm) return;
+const isLoad = ref(true)
+const products = ref([])
+const pagination = ref({})
+const selectedProduct = ref({})
+const editModal = ref(null)
 
-      try {
-        const httpRes = await fetch(API.adminProduct(id), {
-          method: 'DELETE',
-          headers: adminHeaders(),
-        })
-        const res = await httpRes.json()
+async function getProducts(page = 1) {
+  isLoad.value = true
+  try {
+    const httpRes = await fetch(API.adminProducts(page), {
+      headers: adminHeaders(),
+    })
+    const res = await httpRes.json()
 
-        if (res.success) {
-          notify.success('刪除成功')
-          this.getProducts(); // 刪除後重新取得產品列表
-        } else {
-          notify.error(res.message || '刪除失敗')
-        }
-      } catch (err) {
-        notify.error('網路錯誤，刪除失敗')
-      }
+    if (res.success) {
+      products.value = res.products
+      pagination.value = res.pagination
+    } else {
+      notify.error(res.message || '取得產品失敗')
     }
-  },
-  created() {
-    this.getProducts();
-  },
-};
+  } catch (err) {
+    notify.error('網路錯誤')
+  } finally {
+    isLoad.value = false
+  }
+}
+
+function openEdit(item) {
+  selectedProduct.value = { ...item }        // 複製產品資料給 Modal
+  editModal.value.showModal()                // 彈出編輯 Modal
+}
+
+async function deleteProduct(id) {
+  const isConfirm = confirm('確定要刪除這個產品嗎？')
+  if (!isConfirm) return
+
+  try {
+    const httpRes = await fetch(API.adminProduct(id), {
+      method: 'DELETE',
+      headers: adminHeaders(),
+    })
+    const res = await httpRes.json()
+
+    if (res.success) {
+      notify.success('刪除成功')
+      getProducts() // 刪除後重新取得產品列表
+    } else {
+      notify.error(res.message || '刪除失敗')
+    }
+  } catch (err) {
+    notify.error('網路錯誤，刪除失敗')
+  }
+}
+
+getProducts()
 </script>
 
 <style>

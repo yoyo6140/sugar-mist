@@ -5,7 +5,7 @@
   </button>
 
   <!-- Modal -->
-  <div class="modal fade" tabindex="-1" ref="modal">
+  <div class="modal fade" tabindex="-1" ref="modalRef">
     <div class="modal-dialog modal-xl">
       <div class="modal-content border-0">
         <div class="modal-header bg-dark text-white">
@@ -110,116 +110,109 @@
   </div>
 </template>
 
-<script>
-import { Modal } from 'bootstrap/dist/js/bootstrap.bundle.min';
-import Cookies from 'js-cookie';
+<script setup>
+import { ref, watch, onMounted } from 'vue'
+import { Modal } from 'bootstrap/dist/js/bootstrap.bundle.min'
+import Cookies from 'js-cookie'
+import { useRouter } from 'vue-router'
 import { API, adminHeaders } from '@/constants/api'
 import { notify } from '@/components/MessageToast.vue'
-export default {
-    name:'ProductCreateModal',
-    emits:['refresh-products'],
-    data() {
-        return {
-            modal:null,
-            tempProduct:{},
-            isUploading:false
-        }
-    },
-    watch: {
-      'tempProduct.imageUrl'(val) {
-        if(val) {
-          this.isValidImage = true; // 按鈕可以啟用
-        } else {
-          this.isValidImage = false;
-        }
-      }
-    },
-    mounted() {
-        this.modal = new Modal(this.$refs.modal) //建立實例 之後用這個控制
-    },
-    methods:{
-        showModal() {
-            this.modal.show() //彈出視窗
-        },
-        hideModal() {
-            this.modal.hide() //隱藏視窗 (取消按鈕設定)
-            this.tempProduct = { is_enabled: 0 };  // 重置表單資料
-            this.isUploading = false;      // 如果正在上傳，也清掉
-            if (this.$refs.fileInput) {
-              this.$refs.fileInput.value = null;   // 清空 file input
-            }
-            document.activeElement.blur();
-        },
-        
-        async confirmProduct() {
-            if (!this.tempProduct.imageUrl) {
-                notify.warn('請先上傳圖片或輸入圖片網址')
-                return;
-            }
 
-            try {
-                const httpRes = await fetch(API.adminCreateProduct(), {
-                  method: 'POST',
-                  headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ data: this.tempProduct }),
-                })
-                const res = await httpRes.json()
+const emit = defineEmits(['refresh-products'])
 
-                if (res.success) {
-                    this.hideModal()
-                    this.$emit('refresh-products')
-                    this.tempProduct = {is_enabled: 0 }
-                } else {
-                    notify.error(res.message || '新增產品失敗')
-                    }
-                    
-                } 
-            catch(err) {
-                notify.error('新增產品失敗')
-            }
-        },
-        async uploadFile() {
-          const file = this.$refs.fileInput.files[0];
-          if (!file) return;
+const router = useRouter()
+const modalRef = ref(null)
+const fileInput = ref(null)
+let modal = null
+const tempProduct = ref({})
+const isUploading = ref(false)
+let isValidImage = false
 
-          const formData = new FormData();
-          formData.append('file-to-upload', file);
-          this.isUploading = true
+watch(() => tempProduct.value.imageUrl, (val) => {
+  isValidImage = !!val // 按鈕可以啟用
+})
 
-          try {
-            // 從 cookie 拿 token
-            const token = Cookies.get('token');
-            if (!token) {
-              notify.error('尚未登入或登入過期')
-              this.$router.push('/admin/signin');
-              return;
-            }
+onMounted(() => {
+  modal = new Modal(modalRef.value) //建立實例 之後用這個控制
+})
 
-            const httpRes = await fetch(API.adminUpload(), {
-              method: 'POST',
-              headers: adminHeaders(), // FormData 不要手動設定 Content-Type
-              body: formData,
-            })
-            const res = await httpRes.json()
-
-            if (res.success) {
-              this.tempProduct.imageUrl = res.imageUrl; // 上傳成功後存入 tempProduct
-            } else {
-              notify.error(res.message || '檔案上傳失敗')
-            }
-          } catch (err) {
-            notify.error('上傳圖片失敗')
-          }finally {
-            this.isUploading = false
-          }
-        }
-                
-        
-
-            
-        
-    }
+function showModal() {
+  modal.show() //彈出視窗
 }
+
+function hideModal() {
+  modal.hide() //隱藏視窗 (取消按鈕設定)
+  tempProduct.value = { is_enabled: 0 } // 重置表單資料
+  isUploading.value = false // 如果正在上傳，也清掉
+  if (fileInput.value) {
+    fileInput.value.value = null // 清空 file input
+  }
+  document.activeElement.blur()
+}
+
+async function confirmProduct() {
+  if (!tempProduct.value.imageUrl) {
+    notify.warn('請先上傳圖片或輸入圖片網址')
+    return
+  }
+
+  try {
+    const httpRes = await fetch(API.adminCreateProduct(), {
+      method: 'POST',
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: tempProduct.value }),
+    })
+    const res = await httpRes.json()
+
+    if (res.success) {
+      hideModal()
+      emit('refresh-products')
+      tempProduct.value = { is_enabled: 0 }
+    } else {
+      notify.error(res.message || '新增產品失敗')
+    }
+  } catch (err) {
+    notify.error('新增產品失敗')
+  }
+}
+
+async function uploadFile() {
+  const file = fileInput.value.files[0]
+  if (!file) return
+
+  const formData = new FormData()
+  formData.append('file-to-upload', file)
+  isUploading.value = true
+
+  try {
+    // 從 cookie 拿 token
+    const token = Cookies.get('token')
+    if (!token) {
+      notify.error('尚未登入或登入過期')
+      router.push('/admin/signin')
+      return
+    }
+
+    const httpRes = await fetch(API.adminUpload(), {
+      method: 'POST',
+      headers: adminHeaders(), // FormData 不要手動設定 Content-Type
+      body: formData,
+    })
+    const res = await httpRes.json()
+
+    if (res.success) {
+      tempProduct.value.imageUrl = res.imageUrl // 上傳成功後存入 tempProduct
+    } else {
+      notify.error(res.message || '檔案上傳失敗')
+    }
+  } catch (err) {
+    notify.error('上傳圖片失敗')
+  } finally {
+    isUploading.value = false
+  }
+}
+
+defineExpose({ showModal })
 </script>
 
 <style scoped>

@@ -89,7 +89,9 @@
   </router-link>
 </template>
 
-<script>
+<script setup>
+import { ref } from 'vue'
+import { useRoute } from 'vue-router'
 import MyNavbar from '@/components/MyNavbar.vue'
 import HeroCarousel from '@/components/HeroCarousel.vue'
 import MyFooter from '@/components/MyFooter.vue'
@@ -100,84 +102,77 @@ import { API } from '@/constants/api'
 import { notify } from '@/components/MessageToast.vue'
 import cartsIcon from '@/assets/carts.png'
 
-export default {
-  name: 'UserProduct',
-  components: { MyNavbar, MyFooter, LoadingSpinner,HeroCarousel },
-  data() {
-    return {
-      cartsIcon,
-      product: {
-        imagesUrl: []
-      },
-      isLoading: true,
-      cartCount: 0,
-      productQty: 1,
-      qtyMin: 1,
-      qtyMax: 999,
-    }
-  },
-  
-  methods: {
-    adjustQty(delta) {
-      const next = this.productQty + delta
-      this.productQty = Math.min(this.qtyMax, Math.max(this.qtyMin, next))
-    },
-    async getProduct() {
-      const id = this.$route.params.id
-      try {
-        const httpRes = await fetch(API.product(id))
-        const res = await httpRes.json()
-        this.product = res.product || {}
-        if (!this.product.imagesUrl) this.product.imagesUrl = []
-      } catch (err) {
-        notify.error('取得商品資料失敗')
-      } finally {
-        this.isLoading = false
-      }
-    },
-    async addCart(id) {
-      const qty = Math.min(this.qtyMax, Math.max(this.qtyMin, this.productQty))
-      try {
-        const httpRes = await fetch(API.cart(), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ data: { product_id: id, qty } }),
-        })
-        const res = await httpRes.json()
-        if (res?.success === false) {
-          notify.error(res.message || '加入購物車失敗')
-          return
-        }
-        notify.success(qty > 1 ? `已加入購物車（${qty} 件）` : '已加入購物車')
-        this.productQty = 1
-        this.updateCartCount()
-      } catch (err) {
-        notify.error('加入購物車失敗')
-      }
-    },
-    goToSlide(index) {
-      const carouselEl = document.querySelector('#productCarousel')
-      // ✅ 使用 import bootstrap 的方式
-      const carousel = bootstrap.Carousel.getInstance(carouselEl) || new bootstrap.Carousel(carouselEl)
-      carousel.to(index)
-    },
-    async updateCartCount() {
-      try {
-        const httpRes = await fetch(API.cart())
-        const res = await httpRes.json()
-        const carts = res?.data?.carts || []
-        this.cartCount = carts.reduce((total, item) => total + (item.qty || 0), 0)
-      } catch (err) {
-        this.cartCount = 0
-      }
-    }
+const route = useRoute()
 
-  },
-  created() {
-    this.getProduct()
-    this.updateCartCount() 
+const product = ref({
+  imagesUrl: []
+})
+const isLoading = ref(true)
+const cartCount = ref(0)
+const productQty = ref(1)
+const qtyMin = 1
+const qtyMax = 999
+
+function adjustQty(delta) {
+  const next = productQty.value + delta
+  productQty.value = Math.min(qtyMax, Math.max(qtyMin, next))
+}
+
+async function getProduct() {
+  const id = route.params.id
+  try {
+    const httpRes = await fetch(API.product(id))
+    const res = await httpRes.json()
+    product.value = res.product || {}
+    if (!product.value.imagesUrl) product.value.imagesUrl = []
+  } catch (err) {
+    notify.error('取得商品資料失敗')
+  } finally {
+    isLoading.value = false
   }
 }
+
+async function addCart(id) {
+  const qty = Math.min(qtyMax, Math.max(qtyMin, productQty.value))
+  try {
+    const httpRes = await fetch(API.cart(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: { product_id: id, qty } }),
+    })
+    const res = await httpRes.json()
+    if (res?.success === false) {
+      notify.error(res.message || '加入購物車失敗')
+      return
+    }
+    notify.success(qty > 1 ? `已加入購物車（${qty} 件）` : '已加入購物車')
+    productQty.value = 1
+    updateCartCount()
+  } catch (err) {
+    notify.error('加入購物車失敗')
+  }
+}
+
+function goToSlide(index) {
+  const carouselEl = document.querySelector('#productCarousel')
+  // ✅ 使用 import bootstrap 的方式
+  const carousel = bootstrap.Carousel.getInstance(carouselEl) || new bootstrap.Carousel(carouselEl)
+  carousel.to(index)
+}
+
+async function updateCartCount() {
+  try {
+    const httpRes = await fetch(API.cart())
+    const res = await httpRes.json()
+    const carts = res?.data?.carts || []
+    cartCount.value = carts.reduce((total, item) => total + (item.qty || 0), 0)
+  } catch (err) {
+    cartCount.value = 0
+  }
+}
+
+getProduct()
+updateCartCount()
 </script>
 
 <style scoped>

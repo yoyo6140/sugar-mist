@@ -108,97 +108,91 @@
    <!-- 結帳子路由 -->
 </template>
 
-<script>
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import MyNavbar from '@/components/MyNavbar.vue'
 import MyFooter from '@/components/MyFooter.vue'
 import { API } from '@/constants/api'
 import { notify } from '@/components/MessageToast.vue'
 
-export default {
-  name: 'UserCarts',
-  components: {
-    MyNavbar,
-    MyFooter
-    },
-  data() {
-    return {
-      
-      cart: {
-        carts: [],
-        total: 0,
-        final_total: 0
-      },
-      coupon_code: '',
-    }
-  },
-  methods: {
-    async getCarts() {
-      try {
-        const httpRes = await fetch(API.cart())
-        const res = await httpRes.json()
-        this.cart = res.data || { carts: [], total: 0, final_total: 0 }
-      } catch (err) {
-        notify.error('取得購物車失敗')
-        this.cart = { carts: [], total: 0, final_total: 0 }
-      }
-    },
-    async updateCart(item) {
-      const cart = { product_id: item.product_id, qty: item.qty }
-      try {
-        await fetch(API.cartItem(item.id), {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ data: cart }),
-        })
-        this.getCarts()
-      } catch (err) {
-        notify.error('更新購物車失敗')
-      }
-    },
-    async removeCart(id) {
-      try {
-        await fetch(API.cartItem(id), { method: 'DELETE' })
-        this.getCarts()
-      } catch (err) {
-        notify.error('刪除商品失敗')
-      }
-    },
-    checkout() {
-      if (this.cart.carts.length === 0) {
-        notify.warn('購物車沒有商品，無法結帳！')
-        return
-      }
-      // 將購物車資料存在 localStorage
-      localStorage.setItem('checkoutCart', JSON.stringify(this.cart))
-      this.$router.push({ name: 'UserCheckout' })
-    },
-    async applyCoupon() {
-      if (!this.coupon_code) {
-        notify.warn('請輸入優惠碼')
-        return
-      }
-      try {
-        const httpRes = await fetch(API.coupon(), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ data: { code: this.coupon_code } }),
-        })
-        const res = await httpRes.json()
-        if (res?.success === false) {
-          notify.error(res.message || '套用優惠碼失敗')
-          return
-        }
-        notify.success('已套用優惠碼')
-        this.getCarts()
-      } catch (err) {
-        notify.error('套用優惠碼失敗')
-      }
-    }
-  },
-  created() {
-    this.getCarts()
+const router = useRouter()
+
+const cart = ref({
+  carts: [],
+  total: 0,
+  final_total: 0
+})
+const coupon_code = ref('')
+
+async function getCarts() {
+  try {
+    const httpRes = await fetch(API.cart())
+    const res = await httpRes.json()
+    cart.value = res.data || { carts: [], total: 0, final_total: 0 }
+  } catch (err) {
+    notify.error('取得購物車失敗')
+    cart.value = { carts: [], total: 0, final_total: 0 }
   }
 }
+
+async function updateCart(item) {
+  const payload = { product_id: item.product_id, qty: item.qty }
+  try {
+    await fetch(API.cartItem(item.id), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: payload }),
+    })
+    getCarts()
+  } catch (err) {
+    notify.error('更新購物車失敗')
+  }
+}
+
+async function removeCart(id) {
+  try {
+    await fetch(API.cartItem(id), { method: 'DELETE' })
+    getCarts()
+  } catch (err) {
+    notify.error('刪除商品失敗')
+  }
+}
+
+function checkout() {
+  if (cart.value.carts.length === 0) {
+    notify.warn('購物車沒有商品，無法結帳！')
+    return
+  }
+  // 將購物車資料存在 localStorage
+  localStorage.setItem('checkoutCart', JSON.stringify(cart.value))
+  router.push({ name: 'UserCheckout' })
+}
+
+async function applyCoupon() {
+  if (!coupon_code.value) {
+    notify.warn('請輸入優惠碼')
+    return
+  }
+  try {
+    const httpRes = await fetch(API.coupon(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: { code: coupon_code.value } }),
+    })
+    const res = await httpRes.json()
+    if (res?.success === false) {
+      notify.error(res.message || '套用優惠碼失敗')
+      return
+    }
+    notify.success('已套用優惠碼')
+    getCarts()
+  } catch (err) {
+    notify.error('套用優惠碼失敗')
+  }
+}
+
+getCarts()
 </script>
 
 <style scoped>

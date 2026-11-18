@@ -112,7 +112,9 @@
 
 </template>
 
-<script>
+<script setup>
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import MyNavbar from '@/components/MyNavbar.vue'
 import HeroCarousel from '@/components/HeroCarousel.vue'
 import MyFooter from '@/components/MyFooter.vue'
@@ -122,102 +124,96 @@ import { notify } from '@/components/MessageToast.vue'
 import toriiIcon from '@/assets/torii.png'
 import cartsIcon from '@/assets/carts.png'
 
-export default {
-  name:'UserGoods',
-  components: { MyNavbar, MyFooter, LoadingSpinner,HeroCarousel },
-  data() {
-    return {
-      toriiIcon,
-      cartsIcon,
-      products: [],
-      categories: [
-        "北海道・東北（北部）",
-        "關東・中部（東中部）",
-        "近畿・中國・四國（西部）",
-        "九州・沖繩（南部）"
-      ],
-      categoryFilter: '',  
-      isLoading: true,
-      cartCount: 0,
-      cartQtyById: {},
-      cartQtyMin: 1,
-      cartQtyMax: 999,
-    }
-  },
-  computed: {
-    filteredProducts() {
-      return this.products.filter(p => p.category === this.categoryFilter)
-    }
-  },
-  methods: {
-    cartQty(id) {
-      const raw = this.cartQtyById[id]
-      const n =
-        typeof raw === 'number' && !Number.isNaN(raw) ? raw : this.cartQtyMin
-      return Math.min(this.cartQtyMax, Math.max(this.cartQtyMin, n))
-    },
-    adjustCartQty(id, delta) {
-      const next = this.cartQty(id) + delta
-      const clamped = Math.min(
-        this.cartQtyMax,
-        Math.max(this.cartQtyMin, next)
-      )
-      this.cartQtyById = { ...this.cartQtyById, [id]: clamped }
-    },
-    async getProducts() {
-      try {
-        const httpRes = await fetch(API.productsAll())
-        const res = await httpRes.json()
-        this.products = res.products || []
-      } catch (err) {
-        notify.error('取得商品失敗')
-      } finally {
-        this.isLoading = false
-      }
-    },
-    async addCart(id) {
-      const qty = this.cartQty(id)
-      try {
-        const httpRes = await fetch(API.cart(), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ data: { product_id: id, qty } }),
-        })
-        const res = await httpRes.json()
-        if (res?.success === false) {
-          notify.error(res.message || '加入購物車失敗')
-          return
-        }
-        notify.success(qty > 1 ? `已加入購物車（${qty} 件）` : '已加入購物車')
-        this.cartQtyById = { ...this.cartQtyById, [id]: this.cartQtyMin }
-        this.updateCartCount()
-      } catch (err) {
-        notify.error('加入購物車失敗')
-      }
-    },
-    goProductPage(id) {
-      this.$router.push(`/goods/${id}`)
-    },
-    async updateCartCount() {
-      try {
-        const httpRes = await fetch(API.cart())
-        const res = await httpRes.json()
-        const carts = res?.data?.carts || []
-        this.cartCount = carts.reduce((total, item) => total + (item.qty || 0), 0)
-      } catch (err) {
-        this.cartCount = 0
-      }
-    }
-  },
-  created() {
-    // 預設選擇第一個分類
-    if (this.categories.length > 0) {
-      this.categoryFilter = this.categories[0];
-    }
-    this.getProducts()
-    this.updateCartCount() 
+const router = useRouter()
+
+const products = ref([])
+const categories = [
+  "北海道・東北（北部）",
+  "關東・中部（東中部）",
+  "近畿・中國・四國（西部）",
+  "九州・沖繩（南部）"
+]
+const categoryFilter = ref('')
+const isLoading = ref(true)
+const cartCount = ref(0)
+const cartQtyById = ref({})
+const cartQtyMin = 1
+const cartQtyMax = 999
+
+const filteredProducts = computed(() =>
+  products.value.filter(p => p.category === categoryFilter.value)
+)
+
+function cartQty(id) {
+  const raw = cartQtyById.value[id]
+  const n =
+    typeof raw === 'number' && !Number.isNaN(raw) ? raw : cartQtyMin
+  return Math.min(cartQtyMax, Math.max(cartQtyMin, n))
+}
+
+function adjustCartQty(id, delta) {
+  const next = cartQty(id) + delta
+  const clamped = Math.min(
+    cartQtyMax,
+    Math.max(cartQtyMin, next)
+  )
+  cartQtyById.value = { ...cartQtyById.value, [id]: clamped }
+}
+
+async function getProducts() {
+  try {
+    const httpRes = await fetch(API.productsAll())
+    const res = await httpRes.json()
+    products.value = res.products || []
+  } catch (err) {
+    notify.error('取得商品失敗')
+  } finally {
+    isLoading.value = false
   }
 }
+
+async function addCart(id) {
+  const qty = cartQty(id)
+  try {
+    const httpRes = await fetch(API.cart(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: { product_id: id, qty } }),
+    })
+    const res = await httpRes.json()
+    if (res?.success === false) {
+      notify.error(res.message || '加入購物車失敗')
+      return
+    }
+    notify.success(qty > 1 ? `已加入購物車（${qty} 件）` : '已加入購物車')
+    cartQtyById.value = { ...cartQtyById.value, [id]: cartQtyMin }
+    updateCartCount()
+  } catch (err) {
+    notify.error('加入購物車失敗')
+  }
+}
+
+function goProductPage(id) {
+  router.push(`/goods/${id}`)
+}
+
+async function updateCartCount() {
+  try {
+    const httpRes = await fetch(API.cart())
+    const res = await httpRes.json()
+    const carts = res?.data?.carts || []
+    cartCount.value = carts.reduce((total, item) => total + (item.qty || 0), 0)
+  } catch (err) {
+    cartCount.value = 0
+  }
+}
+
+// 預設選擇第一個分類
+if (categories.length > 0) {
+  categoryFilter.value = categories[0]
+}
+getProducts()
+updateCartCount()
 </script>
 
 

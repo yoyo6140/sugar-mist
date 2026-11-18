@@ -13,12 +13,6 @@
 </template>
 
 
-<script>
-export default {
-    name:'MuFooter'
-
-}
-</script>
 
 <style>
 .floating-login {

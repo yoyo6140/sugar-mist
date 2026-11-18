@@ -21,11 +21,7 @@
   <my-footer></my-footer>
 </template>
 
-<script>
-import MyNavbar from '@/components/MyNavbar.vue';
-import MyFooter from '@/components/MyFooter.vue';
-export default {
-  name: "ContactUs",
-  components:{MyNavbar,MyFooter}
-};
+<script setup>
+import MyNavbar from '@/components/MyNavbar.vue'
+import MyFooter from '@/components/MyFooter.vue'
 </script>

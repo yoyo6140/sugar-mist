@@ -87,56 +87,53 @@
   </div>
 </template>
 
-<script>
-import MyNavbar from "@/components/MyNavbar.vue";
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import MyNavbar from "@/components/MyNavbar.vue"
 import Cookies from 'js-cookie'
 import { API } from '@/constants/api'
 import { notify } from '@/components/MessageToast.vue'
-export default {
-  name: "LoginForm",
-  components: { MyNavbar },
-  data() {
-    return {
-      showPassword: false,
-      demoEmail: "abc1425367989@gmail.com",
-      demoPassword: "test1234",
-      user: {
-        username: "",
-        password: "",
-      },
-      errorMessage: "",
-    };
-  },
-  methods: {
-    async copyToClipboard(text, successMessage) {
-      try {
-        await navigator.clipboard.writeText(text);
-        notify.success(successMessage);
-      } catch {
-        notify.error("無法自動複製，請手動選取文字複製");
-      }
-    },
-    async signIn() {
-      try {
-        const httpRes = await fetch(API.adminSignIn(), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(this.user),
-        })
-        const res = await httpRes.json()
 
-        if (res.success) {
-          const { token, expired } = res
-          Cookies.set('token', token, { expires: new Date(expired) })
-          this.$router.push("/admin/products");
-          notify.success('登入成功')
-        } else {
-          notify.error(res.message || '登入失敗')
-        }
-      } catch (err) {
-        notify.error('網路錯誤')
-      }
-    },
-  },
-};
+const router = useRouter()
+
+const showPassword = ref(false)
+const demoEmail = "abc1425367989@gmail.com"
+const demoPassword = "test1234"
+const user = ref({
+  username: "",
+  password: "",
+})
+const errorMessage = ref("")
+
+async function copyToClipboard(text, successMessage) {
+  try {
+    await navigator.clipboard.writeText(text)
+    notify.success(successMessage)
+  } catch {
+    notify.error("無法自動複製，請手動選取文字複製")
+  }
+}
+
+async function signIn() {
+  try {
+    const httpRes = await fetch(API.adminSignIn(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(user.value),
+    })
+    const res = await httpRes.json()
+
+    if (res.success) {
+      const { token, expired } = res
+      Cookies.set('token', token, { expires: new Date(expired) })
+      router.push("/admin/products")
+      notify.success('登入成功')
+    } else {
+      notify.error(res.message || '登入失敗')
+    }
+  } catch (err) {
+    notify.error('網路錯誤')
+  }
+}
 </script>
