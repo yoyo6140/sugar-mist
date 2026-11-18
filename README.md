@@ -1,6 +1,6 @@
 ## 作品連結
 
-- Demo：`https://yoyo6140.github.io/my-works-omamori/#/home`
+- Demo：部署於 Vercel（網址請自行補上）
 
 ## 專案簡介
 
@@ -24,18 +24,18 @@
 
 ## 技術與套件
 
-- **前端**：Vue 3、Vue Router
+- **前端**：Vue 3（`<script setup>` Composition API）、Vue Router
+- **建置工具**：Vite
 - **UI**：Bootstrap 5、HTML、CSS、JavaScript
 - **表單驗證**：VeeValidate（含 i18n / rules）
-- **其他**：Axios、mitt、js-cookie
+- **其他**：mitt、js-cookie
 
 ## 資料夾結構
 
 ```text
 my-omamori/
-├─ public/
-│  ├─ images/
-│  └─ index.html
+├─ public/                 # 原樣輸出的靜態資源（圖片等）
+│  └─ images/
 ├─ src/
 │  ├─ assets/
 │  ├─ components/          # navbar / footer / loading / modal 等共用元件
@@ -45,6 +45,7 @@ my-omamori/
 │  │  ├─ AdminCoupons.vue
 │  │  ├─ AdminOrders.vue
 │  │  ├─ AdminProducts.vue
+│  │  ├─ CallMe.vue
 │  │  ├─ DashBoard.vue
 │  │  ├─ LoginForm.vue
 │  │  ├─ MyHome.vue
@@ -54,14 +55,15 @@ my-omamori/
 │  │  └─ UserProduct.vue
 │  ├─ App.vue
 │  └─ main.js
+├─ index.html
 ├─ .env
 ├─ package.json
-└─ vue.config.js
+└─ vite.config.js
 ```
 
 ## 開發與部署
 
-此專案使用 **Vue CLI**。
+此專案使用 **Vite**。
 
 ### 安裝
 
@@ -75,17 +77,17 @@ npm install
 npm run serve
 ```
 
+預設網址為 `http://localhost:5173`（Vite 預設 port，被佔用時會自動換一個）。
+
 ### 建置
 
 ```bash
 npm run build
 ```
 
-### 部署（GitHub Pages）
+### 部署
 
-```bash
-npm run deploy
-```
+只部署在 **Vercel**（`vercel.json` 已設定 SPA rewrite，支援 `vue-router` 的乾淨網址模式）。
 
 
 
