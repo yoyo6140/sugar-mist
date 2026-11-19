@@ -14,19 +14,12 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: "HeroCarousel",
-  data() {
-    return {
-      slides: [
-        { image: './images/slide1.png', alt: '御守1', title: '祈願平安' },
-        { image: './images/slide2.png', alt: '御守2', title: '幸福常伴' },
-        { image: './images/slide3.png', alt: '御守3', title: '日本神社' }
-      ]
-    }
-  }
-}
+<script setup>
+const slides = [
+  { image: './images/slide1.png', alt: '御守1', title: '祈願平安' },
+  { image: './images/slide2.png', alt: '御守2', title: '幸福常伴' },
+  { image: './images/slide3.png', alt: '御守3', title: '日本神社' }
+]
 </script>
 
 <style>

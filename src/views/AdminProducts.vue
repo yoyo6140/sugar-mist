@@ -1,16 +1,17 @@
 <template>
   <loading-spinner v-if="isLoad" ></loading-spinner>
 
-  <div class="container" v-else>
-  <div class="text-end">
-    <product-create-modal @refresh-products="getProducts()"></product-create-modal>
-  </div>
-  
-  <div class="container mt-4">
-    <h3 class="mb-3">產品清單</h3>
+  <div class="theme-wrap admin-view" v-else>
+  <div class="mt-4">
+    <div class="products-header-row mb-3">
+      <h3 class="mb-0 text-center">產品清單</h3>
+      <div class="products-header-action">
+        <product-create-modal @refresh-products="getProducts()"></product-create-modal>
+      </div>
+    </div>
 
     <!-- 桌機版：表格 (md 以上) -->
-    <table class="table align-middle d-none d-md-table">
+    <table class="table align-middle d-none d-md-table product-list-table">
       <thead class="table-light">
         <tr>
           <th width="120">圖片</th>
@@ -27,8 +28,8 @@
             <img
               :src="item.imageUrl"
               alt="產品圖片"
-              class="img-thumbnail"
-              style="width: 100px; height: auto;"
+              class="img-thumbnail product-thumb"
+              loading="lazy"
             />
           </td>
           <td>{{ item.category }}</td>
@@ -40,8 +41,12 @@
           </td>
           <td>
             <div class="btn-group" role="group">
-              <button class="btn btn-outline-primary btn-sm" @click="openEdit(item)">編輯</button>
-              <button class="btn btn-outline-danger btn-sm" @click="deleteProduct(item.id)">刪除</button>
+              <button class="icon-action-btn" @click="openEdit(item)" title="編輯" aria-label="編輯">
+                <i class="bi bi-pencil-square"></i>
+              </button>
+              <button class="icon-action-btn danger" @click="deleteProduct(item.id)" title="刪除" aria-label="刪除">
+                <i class="bi bi-trash"></i>
+              </button>
             </div>
           </td>
         </tr>
@@ -60,6 +65,7 @@
             :src="item.imageUrl"
             class="card-img-top product-img"
             alt="產品圖片"
+            loading="lazy"
           />
           <div class="card-body">
             <h6 class="card-subtitle mb-2 text-muted">{{ item.category }}</h6>
@@ -71,8 +77,12 @@
             <span class="badge bg-secondary" v-else>未啟用</span>
           </div>
           <div class="card-footer d-flex justify-content-between">
-            <button @click="openEdit(item)">編輯</button>
-            <button @click="deleteProduct(item.id)">刪除</button>
+            <button class="icon-action-btn" @click="openEdit(item)" title="編輯" aria-label="編輯">
+              <i class="bi bi-pencil-square"></i>
+            </button>
+            <button class="icon-action-btn danger" @click="deleteProduct(item.id)" title="刪除" aria-label="刪除">
+              <i class="bi bi-trash"></i>
+            </button>
           </div>
         </div>
       </div>
@@ -87,75 +97,69 @@
   <MyPagination :pages="pagination" @emit-pages="getProducts"></MyPagination>
 </template>
 
-<script>
-import LoadingSpinner from "@/components/LoadingSpinner.vue";
-import ProductCreateModal from "@/components/ProductCreateModal.vue";
-import ProductEditModal from "@/components/ProductEditModal.vue";
-import MyPagination from "@/components/MyPagination.vue";
+<script setup>
+import { ref } from 'vue'
+import LoadingSpinner from "@/components/LoadingSpinner.vue"
+import ProductCreateModal from "@/components/ProductCreateModal.vue"
+import ProductEditModal from "@/components/ProductEditModal.vue"
+import MyPagination from "@/components/MyPagination.vue"
 import { API, adminHeaders } from '@/constants/api'
 import { notify } from '@/components/MessageToast.vue'
-export default {
-  name: "ProductList",
-  components:{LoadingSpinner,ProductCreateModal,ProductEditModal,MyPagination},
-  data() {
-    return {
-      isLoad: true,
-      products: [],
-      pagination:{},
-      selectedProduct: {}
-    };
-  },
-  methods: {
-    async getProducts(page = 1) {
-      this.isLoad = true;
-      try {
-        const httpRes = await fetch(API.adminProducts(page), {
-          headers: adminHeaders(),
-        })
-        const res = await httpRes.json()
 
-        if (res.success) {
-          this.products = res.products
-          this.pagination = res.pagination
-        } else {
-          notify.error(res.message || '取得產品失敗')
-        }
-      } catch (err) {
-        notify.error('網路錯誤')
-      } finally {
-        this.isLoad = false;
-      }
-    },
-    openEdit(item) {
-      this.selectedProduct = { ...item };        // 複製產品資料給 Modal
-      this.$refs.editModal.showModal();          // 彈出編輯 Modal
-    },
-    async deleteProduct(id) {
-      const isConfirm = confirm('確定要刪除這個產品嗎？');
-      if (!isConfirm) return;
+const isLoad = ref(true)
+const products = ref([])
+const pagination = ref({})
+const selectedProduct = ref({})
+const editModal = ref(null)
 
-      try {
-        const httpRes = await fetch(API.adminProduct(id), {
-          method: 'DELETE',
-          headers: adminHeaders(),
-        })
-        const res = await httpRes.json()
+async function getProducts(page = 1) {
+  try {
+    const httpRes = await fetch(API.adminProducts(page), {
+      headers: adminHeaders(),
+    })
+    const res = await httpRes.json()
 
-        if (res.success) {
-          notify.success('刪除成功')
-          this.getProducts(); // 刪除後重新取得產品列表
-        } else {
-          notify.error(res.message || '刪除失敗')
-        }
-      } catch (err) {
-        notify.error('網路錯誤，刪除失敗')
-      }
+    if (res.success) {
+      products.value = res.products
+      pagination.value = res.pagination
+    } else {
+      notify.error(res.message || '取得產品失敗')
     }
-  },
-  created() {
-    this.getProducts();
-  },
-};
+  } catch (err) {
+    notify.error('網路錯誤')
+  } finally {
+    isLoad.value = false
+  }
+}
+
+function openEdit(item) {
+  selectedProduct.value = { ...item }        // 複製產品資料給 Modal
+  editModal.value.showModal()                // 彈出編輯 Modal
+}
+
+async function deleteProduct(id) {
+  const isConfirm = confirm('確定要刪除這個產品嗎？')
+  if (!isConfirm) return
+
+  try {
+    const httpRes = await fetch(API.adminProduct(id), {
+      method: 'DELETE',
+      headers: adminHeaders(),
+    })
+    const res = await httpRes.json()
+
+    if (res.success) {
+      notify.success('刪除成功')
+      getProducts() // 刪除後重新取得產品列表
+    } else {
+      notify.error(res.message || '刪除失敗')
+    }
+  } catch (err) {
+    notify.error('網路錯誤，刪除失敗')
+  }
+}
+
+getProducts()
 </script>
 
 <style>
@@ -164,5 +168,34 @@ export default {
   height: 200px;
   object-fit: cover; /* 保持比例，超出部分裁切 */
   border-radius: 8px;
+}
+
+.product-thumb {
+  width: 100px;
+  height: 100px;
+  object-fit: cover; /* 固定尺寸，保持比例裁切 */
+}
+
+.products-header-row {
+  position: relative;
+}
+.products-header-action {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+}
+
+.product-list-table {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--espresso);
+}
+.product-list-table thead th {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--espresso);
 }
 </style>

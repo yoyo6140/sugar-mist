@@ -1,46 +1,54 @@
 <template>
-  <div class="top-bar d-flex justify-content-end p-1 ">
-      <router-link to="/admin/products" class="primary me-1">
-        管理登入
+  <div class="theme-topbar">週二至週日 11:00 – 20:00　·　整模蛋糕請於三日前預訂</div>
+  <header class="theme-header">
+    <div class="theme-wrap theme-nav">
+      <div class="nav-left"></div>
+      <router-link class="theme-brand" :to="{ name: 'MyHome' }" aria-label="糖霧 Sugar Mist 首頁">
+        <span class="en">SUGAR MIST</span>
+        <span class="zh">糖霧・甜點與茶</span>
       </router-link>
-      <router-link :to="{name:'CallMe'}" class="secondary">
-        聯絡我們
-      </router-link>
-    </div>
-  <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
-    <div class="container-fluid">
-      <router-link class="navbar-brand fw-bold" :to="{ name: 'MyHome' }">
-        <img src="logo.png" alt="Logo" width="30" class="d-inline-block align-text-top">
-        御守屋
-      </router-link>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item"><router-link class="nav-link" :to="{name:'MyHome'}">首頁</router-link></li>
-          <li class="nav-item"><router-link class="nav-link" :to="{name:'UserGoods'}">商品</router-link></li>
-          <li class="nav-item"><router-link class="nav-link" :to="{name:'UserCarts'}">購物車</router-link></li>
+      <div class="nav-right">
+        <ul>
+          <li><router-link :to="{ name: 'UserGoods' }">商品</router-link></li>
+          <li><router-link :to="{ name: 'UserOrderLookup' }">查詢訂單</router-link></li>
         </ul>
       </div>
     </div>
-  </nav>
+  </header>
+
+  <router-link class="theme-cart-float" :to="{ name: 'UserCarts' }" aria-label="前往購物車">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">
+      <path d="M5 8h14l-1.2 12.2a1 1 0 0 1-1 .8H7.2a1 1 0 0 1-1-.8L5 8z" />
+      <path d="M9 8V6.5a3 3 0 0 1 6 0V8" />
+    </svg>
+    <span class="theme-cart-count" :class="{ zero: cartCount === 0 }">{{ cartCount }}</span>
+  </router-link>
 </template>
 
-<script>
-export default {
-  name: 'MyNavbar'
+<script setup>
+import { onMounted, onUnmounted, ref } from 'vue'
+import { API } from '@/constants/api'
+import emitter from '@/methods/emitter'
+
+const cartCount = ref(0)
+
+async function updateCartCount() {
+  try {
+    const httpRes = await fetch(API.cart())
+    const res = await httpRes.json()
+    const carts = res?.data?.carts || []
+    cartCount.value = carts.reduce((total, item) => total + (item.qty || 0), 0)
+  } catch (err) {
+    cartCount.value = 0
+  }
 }
+
+onMounted(() => {
+  updateCartCount()
+  emitter.on('cart-updated', updateCartCount)
+})
+
+onUnmounted(() => {
+  emitter.off('cart-updated', updateCartCount)
+})
 </script>
-
-<style scoped>
-
-.navbar {
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
-}
-.top-bar {
-  font-size: 10px;
-}
-
-</style>
