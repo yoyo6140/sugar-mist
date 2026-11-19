@@ -1,8 +1,8 @@
 {
-  "name": "my-omamori",
+  "name": "sugar-mist",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://github.com/yoyo6140/my-works-omamori",
+  "homepage": "https://github.com/yoyo6140/sugar-mist",
   "scripts": {
     "serve": "vite",
     "build": "vite build",
