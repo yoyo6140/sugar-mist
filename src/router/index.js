@@ -1,5 +1,5 @@
 // src/router/index.js
-import { createRouter, createWebHashHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import Cookies from 'js-cookie'
 
 // 匯入各頁面元件
@@ -8,8 +8,7 @@ import LoginForm from '@/views/LoginForm.vue'
 import DashBoard from '@/views/DashBoard.vue'
 import AdminProducts from '@/views/AdminProducts.vue'
 import AdminOrders from '@/views/AdminOrders.vue'
-import AdminCoupons from '@/views/AdminCoupons.vue'
-import CallMe from '@/views/CallMe.vue'
+import UserOrderLookup from '@/views/UserOrderLookup.vue'
 import UserGoods from '@/views/UserGoods.vue'
 import UserCarts from '@/views/UserCarts.vue'
 import UserProduct from '@/views/UserProduct.vue'
@@ -43,12 +42,6 @@ const routes = [
           component:AdminOrders,
           meta: { requiresAuth: true }
         },
-        {
-          path:'coupons',
-          name:'AdminCoupons',
-          component:AdminCoupons,
-          meta: { requiresAuth: true }
-        },
       ]
 
     },
@@ -77,15 +70,15 @@ const routes = [
     },
     
     {
-      path:'/callme',
-      name:'CallMe',
-      component:CallMe,
+      path: '/order-lookup',
+      name: 'UserOrderLookup',
+      component: UserOrderLookup,
     }
 
 ]
 
 const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes
 })
 

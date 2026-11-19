@@ -5,7 +5,7 @@
   </button>
 
   <!-- Modal -->
-  <div class="modal fade" tabindex="-1" ref="modal">
+  <div class="modal fade" tabindex="-1" ref="modalRef">
     <div class="modal-dialog modal-xl">
       <div class="modal-content border-0">
         <div class="modal-header bg-dark text-white">
@@ -19,15 +19,16 @@
             <div class="col-sm-4">
               <!-- 單張主圖輸入 -->
               <div class="mb-3">
-                <label class="form-label">輸入圖片網址</label>
+                <label class="form-label">輸入圖片網址 <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" v-model="tempProduct.imageUrl">
               </div>
 
               <!-- 上傳圖片 -->
               <div class="mb-3">
-                <label class="form-label">或上傳圖片</label>
+                <label class="form-label">或上傳圖片 <span class="text-danger">*</span></label>
                 <input type="file" class="form-control" ref="fileInput"  @change="uploadFile">
                 <div v-if="isUploading" class="text-info mt-1">圖片上傳中...</div>
+                <div class="form-text">網址或上傳擇一必填</div>
               </div>
 
               <!-- 顯示已上傳的多張圖片 -->
@@ -46,37 +47,39 @@
             <!-- 右側文字資訊 -->
             <div class="col-sm-8">
               <div class="mb-3">
-                <label class="form-label">標題</label>
+                <label class="form-label">標題 <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" v-model="tempProduct.title">
               </div>
 
               <div class="row gx-2">
                 <!-- 分類下拉選單 -->
                 <div class="mb-3 col-md-6">
-                  <label class="form-label">分類</label>
+                  <label class="form-label">分類 <span class="text-danger">*</span></label>
                   <select class="form-select" v-model="tempProduct.category">
                     <option value="" disabled>請選擇分類</option>
-                    <option value="北海道・東北（北部）">北海道・東北（北部）</option>
-                    <option value="關東・中部（東中部）">關東・中部（東中部）</option>
-                    <option value="近畿・中國・四國（西部）">近畿・中國・四國（西部）</option>
-                    <option value="九州・沖繩（南部）">九州・沖繩（南部）</option>
+                    <option value="手工甜點">手工甜點</option>
+                    <option value="精緻飲品">精緻飲品</option>
                   </select>
                 </div>
 
                 <div class="mb-3 col-md-6">
-                  <label class="form-label">單位</label>
+                  <label class="form-label">單位 <span class="text-danger">*</span></label>
                   <input type="text" class="form-control" v-model="tempProduct.unit">
                 </div>
               </div>
 
               <div class="row gx-2">
-                <div class="mb-3 col-md-6">
-                  <label class="form-label">原價</label>
+                <div class="mb-3 col-md-4">
+                  <label class="form-label">原價 <span class="text-danger">*</span></label>
                   <input type="number" class="form-control" v-model.number="tempProduct.origin_price">
                 </div>
-                <div class="mb-3 col-md-6">
-                  <label class="form-label">售價</label>
+                <div class="mb-3 col-md-4">
+                  <label class="form-label">售價 <span class="text-danger">*</span></label>
                   <input type="number" class="form-control" v-model.number="tempProduct.price">
+                </div>
+                <div class="mb-3 col-md-4">
+                  <label class="form-label">數量 <span class="text-danger">*</span></label>
+                  <input type="number" class="form-control" v-model.number="tempProduct.num">
                 </div>
               </div>
 
@@ -92,7 +95,7 @@
 
               <div class="mb-3 form-check">
                 <input class="form-check-input" type="checkbox"
-                      :value="1"
+                      :true-value="1" :false-value="0"
                       v-model="tempProduct.is_enabled"
                       id="is_enabled">
                 <label class="form-check-label" for="is_enabled">是否啟用</label>
@@ -110,116 +113,133 @@
   </div>
 </template>
 
-<script>
-import { Modal } from 'bootstrap/dist/js/bootstrap.bundle.min';
-import Cookies from 'js-cookie';
+<script setup>
+import { ref, watch, onMounted } from 'vue'
+import { Modal } from 'bootstrap/dist/js/bootstrap.bundle.min'
+import Cookies from 'js-cookie'
+import { useRouter } from 'vue-router'
 import { API, adminHeaders } from '@/constants/api'
 import { notify } from '@/components/MessageToast.vue'
-export default {
-    name:'ProductCreateModal',
-    emits:['refresh-products'],
-    data() {
-        return {
-            modal:null,
-            tempProduct:{},
-            isUploading:false
-        }
-    },
-    watch: {
-      'tempProduct.imageUrl'(val) {
-        if(val) {
-          this.isValidImage = true; // 按鈕可以啟用
-        } else {
-          this.isValidImage = false;
-        }
-      }
-    },
-    mounted() {
-        this.modal = new Modal(this.$refs.modal) //建立實例 之後用這個控制
-    },
-    methods:{
-        showModal() {
-            this.modal.show() //彈出視窗
-        },
-        hideModal() {
-            this.modal.hide() //隱藏視窗 (取消按鈕設定)
-            this.tempProduct = { is_enabled: 0 };  // 重置表單資料
-            this.isUploading = false;      // 如果正在上傳，也清掉
-            if (this.$refs.fileInput) {
-              this.$refs.fileInput.value = null;   // 清空 file input
-            }
-            document.activeElement.blur();
-        },
-        
-        async confirmProduct() {
-            if (!this.tempProduct.imageUrl) {
-                notify.warn('請先上傳圖片或輸入圖片網址')
-                return;
-            }
 
-            try {
-                const httpRes = await fetch(API.adminCreateProduct(), {
-                  method: 'POST',
-                  headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ data: this.tempProduct }),
-                })
-                const res = await httpRes.json()
+const emit = defineEmits(['refresh-products'])
 
-                if (res.success) {
-                    this.hideModal()
-                    this.$emit('refresh-products')
-                    this.tempProduct = {is_enabled: 0 }
-                } else {
-                    notify.error(res.message || '新增產品失敗')
-                    }
-                    
-                } 
-            catch(err) {
-                notify.error('新增產品失敗')
-            }
-        },
-        async uploadFile() {
-          const file = this.$refs.fileInput.files[0];
-          if (!file) return;
+const router = useRouter()
+const modalRef = ref(null)
+const fileInput = ref(null)
+let modal = null
+const tempProduct = ref({})
+const isUploading = ref(false)
+let isValidImage = false
 
-          const formData = new FormData();
-          formData.append('file-to-upload', file);
-          this.isUploading = true
+watch(() => tempProduct.value.imageUrl, (val) => {
+  isValidImage = !!val // 按鈕可以啟用
+})
 
-          try {
-            // 從 cookie 拿 token
-            const token = Cookies.get('token');
-            if (!token) {
-              notify.error('尚未登入或登入過期')
-              this.$router.push('/admin/signin');
-              return;
-            }
+onMounted(() => {
+  modal = new Modal(modalRef.value) //建立實例 之後用這個控制
+})
 
-            const httpRes = await fetch(API.adminUpload(), {
-              method: 'POST',
-              headers: adminHeaders(), // FormData 不要手動設定 Content-Type
-              body: formData,
-            })
-            const res = await httpRes.json()
-
-            if (res.success) {
-              this.tempProduct.imageUrl = res.imageUrl; // 上傳成功後存入 tempProduct
-            } else {
-              notify.error(res.message || '檔案上傳失敗')
-            }
-          } catch (err) {
-            notify.error('上傳圖片失敗')
-          }finally {
-            this.isUploading = false
-          }
-        }
-                
-        
-
-            
-        
-    }
+function showModal() {
+  modal.show() //彈出視窗
 }
+
+function hideModal() {
+  modal.hide() //隱藏視窗 (取消按鈕設定)
+  tempProduct.value = { is_enabled: 0 } // 重置表單資料
+  isUploading.value = false // 如果正在上傳，也清掉
+  if (fileInput.value) {
+    fileInput.value.value = null // 清空 file input
+  }
+  document.activeElement.blur()
+}
+
+async function confirmProduct() {
+  if (!tempProduct.value.imageUrl) {
+    notify.warn('請先上傳圖片或輸入圖片網址')
+    return
+  }
+  if (!tempProduct.value.title) {
+    notify.warn('請輸入標題')
+    return
+  }
+  if (!tempProduct.value.category) {
+    notify.warn('請選擇分類')
+    return
+  }
+  if (!tempProduct.value.unit) {
+    notify.warn('請輸入單位')
+    return
+  }
+  if (tempProduct.value.origin_price == null || tempProduct.value.origin_price === '') {
+    notify.warn('請輸入原價')
+    return
+  }
+  if (tempProduct.value.price == null || tempProduct.value.price === '') {
+    notify.warn('請輸入售價')
+    return
+  }
+  if (tempProduct.value.num == null || tempProduct.value.num === '') {
+    notify.warn('請輸入數量')
+    return
+  }
+
+  try {
+    const httpRes = await fetch(API.adminCreateProduct(), {
+      method: 'POST',
+      headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: tempProduct.value }),
+    })
+    const res = await httpRes.json()
+
+    if (res.success) {
+      hideModal()
+      emit('refresh-products')
+      tempProduct.value = { is_enabled: 0 }
+    } else {
+      notify.error(res.message || '新增產品失敗')
+    }
+  } catch (err) {
+    notify.error('新增產品失敗')
+  }
+}
+
+async function uploadFile() {
+  const file = fileInput.value.files[0]
+  if (!file) return
+
+  const formData = new FormData()
+  formData.append('file-to-upload', file)
+  isUploading.value = true
+
+  try {
+    // 從 cookie 拿 token
+    const token = Cookies.get('token')
+    if (!token) {
+      notify.error('尚未登入或登入過期')
+      router.push('/admin/signin')
+      return
+    }
+
+    const httpRes = await fetch(API.adminUpload(), {
+      method: 'POST',
+      headers: adminHeaders(), // FormData 不要手動設定 Content-Type
+      body: formData,
+    })
+    const res = await httpRes.json()
+
+    if (res.success) {
+      tempProduct.value.imageUrl = res.imageUrl // 上傳成功後存入 tempProduct
+    } else {
+      notify.error(res.message || '檔案上傳失敗')
+    }
+  } catch (err) {
+    notify.error('上傳圖片失敗')
+  } finally {
+    isUploading.value = false
+  }
+}
+
+defineExpose({ showModal })
 </script>
 
 <style scoped>
@@ -237,5 +257,19 @@ export default {
   align-items: center;       /* 垂直置中 */
 }
 
-
+/* 是否啟用：加大並加深邊框，避免太不明顯 */
+.form-check-input {
+  width: 1.4em;
+  height: 1.4em;
+  border: 2px solid var(--espresso);
+  cursor: pointer;
+}
+.form-check-input:checked {
+  background-color: var(--espresso);
+  border-color: var(--espresso);
+}
+.form-check-label {
+  cursor: pointer;
+  margin-left: 6px;
+}
 </style>

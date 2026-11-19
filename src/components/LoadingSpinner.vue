@@ -6,11 +6,6 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: "LoadingSpinner"
-}
-</script>
 
 <style scoped>
 .loader-container {

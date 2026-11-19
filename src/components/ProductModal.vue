@@ -9,7 +9,7 @@
   </button>
 
   <!-- Modal -->
-  <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel"  ref="modal">
+  <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel"  ref="modalRef">
     <div class="modal-dialog modal-xl">
       <div class="modal-content border-0">
         <div class="modal-header bg-dark text-white">
@@ -99,96 +99,88 @@
   </div>
 </template>
 
-<script>
-import { Modal } from 'bootstrap/dist/js/bootstrap.bundle.min';
-// import modalMixin from '../mixins/modalMinxin';
+<script setup>
+import { ref, watch, onMounted } from 'vue'
+import { Modal } from 'bootstrap/dist/js/bootstrap.bundle.min'
 import Cookies from 'js-cookie'
 import { API, adminHeaders } from '@/constants/api'
 import { notify } from '@/components/MessageToast.vue'
 
-export default {
-    name:'ProductModal',
-    // mixins: [modalMixin],
-    props:{
-        product:{
-            type:Object,
-            default() {
-              return {}
-            }
-        },
-        isNew: { 
-          type: Boolean, 
-          default: true 
-        } // 新增模式默認 true 用來防止編輯產品時 要求要上傳圖片
-    },
-    watch: {
-        product() {
-            this.tempProduct = this.product
-            }
-        },
-    emits: ['update-product'], 
-    data() {
-        return {
-            modal:{},
-            tempProduct:{}
-        }
-    },
-
-    methods:{
-       confirmProduct() {
-        if (this.isNew && !this.tempProduct.image) {
-          notify.warn('新增時必須上傳圖片')
-          return; // 前面 新增時候 要有圖片 編輯時候確定有無圖片
-        }
-        this.$emit('update-product', this.tempProduct)
-        this.hideModal()
-      },
- 
-      showModal() {
-        this.modal.show()
-        
-      },
-        hideModal() {
-        const activeEl = document.activeElement;
-        if (this.$refs.modal.contains(activeEl)) {
-          activeEl.blur(); // 取消 focus
-        }
-        this.modal.hide()
-
-      },
-        async uploadFile() {
-        const uploadFile = this.$refs.fileInput.files[0]
-        const formData = new FormData()
-        formData.append('file-to-upload', uploadFile)
-        try {
-          const token = Cookies.get('token') || ''
-          if (!token) {
-            notify.error('尚未登入或登入過期')
-            return
-          }
-          const httpRes = await fetch(API.adminUpload(), {
-            method: 'POST',
-            headers: adminHeaders(),
-            body: formData,
-          })
-          const res = await httpRes.json()
-
-          if (res.success) {
-            // 將上傳結果存到 tempProduct.image
-            this.tempProduct.image = res.imageUrl
-          } else {
-            notify.error(res.message || '檔案上傳失敗')
-          }
-        } catch (err) {
-          notify.error('上傳發生錯誤')
-        }
-      }
-    },
-    mounted() {
-        this.modal = new Modal(this.$refs.modal)
-
+const props = defineProps({
+  product: {
+    type: Object,
+    default() {
+      return {}
     }
+  },
+  isNew: {
+    type: Boolean,
+    default: true
+  } // 新增模式默認 true 用來防止編輯產品時 要求要上傳圖片
+})
+const emit = defineEmits(['update-product'])
+
+const modalRef = ref(null)
+const fileInput = ref(null)
+let modal = null
+const tempProduct = ref({})
+
+watch(() => props.product, (val) => {
+  tempProduct.value = val
+})
+
+function confirmProduct() {
+  if (props.isNew && !tempProduct.value.image) {
+    notify.warn('新增時必須上傳圖片')
+    return // 前面 新增時候 要有圖片 編輯時候確定有無圖片
+  }
+  emit('update-product', tempProduct.value)
+  hideModal()
 }
+
+function showModal() {
+  modal.show()
+}
+
+function hideModal() {
+  const activeEl = document.activeElement
+  if (modalRef.value.contains(activeEl)) {
+    activeEl.blur() // 取消 focus
+  }
+  modal.hide()
+}
+
+async function uploadFile() {
+  const uploadFileEl = fileInput.value.files[0]
+  const formData = new FormData()
+  formData.append('file-to-upload', uploadFileEl)
+  try {
+    const token = Cookies.get('token') || ''
+    if (!token) {
+      notify.error('尚未登入或登入過期')
+      return
+    }
+    const httpRes = await fetch(API.adminUpload(), {
+      method: 'POST',
+      headers: adminHeaders(),
+      body: formData,
+    })
+    const res = await httpRes.json()
+
+    if (res.success) {
+      // 將上傳結果存到 tempProduct.image
+      tempProduct.value.image = res.imageUrl
+    } else {
+      notify.error(res.message || '檔案上傳失敗')
+    }
+  } catch (err) {
+    notify.error('上傳發生錯誤')
+  }
+}
+
+onMounted(() => {
+  modal = new Modal(modalRef.value)
+})
 </script>
 
 <style>

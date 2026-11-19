@@ -7,21 +7,12 @@
   
 </template>
 
-<script>
-import DashNavbar from '@/components/DashNavbar.vue';
-import emitter from '@/methods/emitter';
-export default {
-    name:'DashBoard',
-    components:{DashNavbar},
-    
-    provide() {
-      return {
-            emitter
-        }
-    }
-    
+<script setup>
+import { provide } from 'vue'
+import DashNavbar from '@/components/DashNavbar.vue'
+import emitter from '@/methods/emitter'
 
-}
+provide('emitter', emitter)
 </script>
 
 <style>

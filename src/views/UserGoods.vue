@@ -1,276 +1,226 @@
 <template>
-  
   <loading-spinner v-if="isLoading"></loading-spinner>
-    
-  <div v-else class="container">
-  <my-navbar></my-navbar>
-  <hero-carousel></hero-carousel>
-      <div class="container mt-4">
-        <div class="row">
-          <!-- 左側分類欄 -->
-          <div class="col-md-3 mb-3">
-            <div class="list-group text-start">
-              <button 
-                v-for="cat in categories" 
-                :key="cat" 
-                type="button" 
-                class="list-group-item list-group-item-action"
-                :class="{ active: categoryFilter === cat }"
-                @click="categoryFilter = cat">
-                <img :src="require('@/assets/torii.png')" alt="icon" style="width:20px; height:20px;" class="me-2">
-                {{ cat }}
-              </button>
+
+  <div v-else>
+    <my-navbar></my-navbar>
+
+    <section class="goods-page theme-wrap">
+      <div class="theme-head">
+        <div>
+          <p class="kicker">La Carte</p>
+          <h2>全部商品<span class="fr">All products</span></h2>
+        </div>
+      </div>
+
+      <div class="goods-grid">
+        <div class="goods-card" v-for="item in pagedProducts" :key="item.id">
+          <router-link :to="{ name: 'UserProduct', params: { id: item.id } }">
+            <img class="goods-photo" :src="item.imageUrl" :alt="item.title" loading="lazy">
+          </router-link>
+          <div class="goods-body">
+            <p class="goods-cat">{{ item.category }}</p>
+            <router-link class="goods-title-link" :to="{ name: 'UserProduct', params: { id: item.id } }">
+              <h3>{{ item.title }}</h3>
+            </router-link>
+            <p class="goods-desc">{{ item.description }}</p>
+            <div class="goods-footer">
+              <span class="theme-price">NT$ {{ item.price }}</span>
+              <div class="theme-qty">
+                <button type="button" @click="adjustCartQty(item.id, -1)" aria-label="減少數量">−</button>
+                <span>{{ cartQty(item.id) }}</span>
+                <button type="button" @click="adjustCartQty(item.id, 1)" aria-label="增加數量">+</button>
+              </div>
             </div>
-          </div>
-
-          <!-- 商品卡片區 -->
-          <div class="col-md-9">
-            <div class="row g-3" style="min-height: 200px;">
-              <div v-for="item in filteredProducts" :key="item.id" class="col-md-4">
-                <div class="card h-100 d-flex flex-column">
-                  <div class="card-img-top" 
-                       :style="{ 
-                          backgroundImage: `url(${item.imageUrl})`, 
-                          height: '200px',
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center'
-                        }" 
-                        @click="goProductPage(item.id)">
-                  </div>
-                  <div class="mb-3 flex-grow-1">
-                    <div class="row">
-                      <h5 class="card-title text-start">
-                        <img :src="require('@/assets/torii.png')" alt="icon" style="width:20px; height:20px;" class="me-2">
-                        {{ item.title }}</h5>
-                    </div>
-                    <div class="row">
-                      <p class="card-text">商品:{{ item.description }}</p>
-                    </div>
-                    <div class="row text-end">
-                      <span class="text-warning">NT {{ item.price }} 元</span>
-                    </div>
-                  </div>
-
-                  <div class="px-2 pb-2 mt-auto">
-                    <span class="visually-hidden">數量</span>
-                    <div class="input-group input-group-sm">
-                      <button
-                        type="button"
-                        class="btn btn-outline-secondary"
-                        aria-label="減少數量"
-                        @click.stop="adjustCartQty(item.id, -1)"
-                      >
-                        −
-                      </button>
-                      <span
-                        class="input-group-text flex-grow-1 justify-content-center"
-                      >{{ cartQty(item.id) }}</span>
-                      <button
-                        type="button"
-                        class="btn btn-outline-secondary"
-                        aria-label="增加數量"
-                        @click.stop="adjustCartQty(item.id, 1)"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- 底部黑色按鈕區 -->
-                  <div class="card-footer d-flex justify-content-between bg-dark">
-                    <button href="#"
-                      class="btn btn-outline-warning btn-sm"
-                      @click.prevent="goProductPage(item.id)">
-                      顯示更多
-                    </button>
-
-                    <button class="btn btn-outline-warning btn-sm" @click="addCart(item.id)">
-                      加到購物車
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div v-if="filteredProducts.length === 0" class="col-12 text-center text-muted py-5">
-                尚無商品
-              </div>
+            <div class="goods-actions">
+              <router-link class="theme-btn goods-detail" :to="{ name: 'UserProduct', params: { id: item.id } }">詳情</router-link>
+              <button type="button" class="theme-btn solid goods-add" @click="addCart(item.id)">加入購物車</button>
             </div>
           </div>
         </div>
-        <my-footer></my-footer>
+        <p v-if="!products.length" class="text-muted">尚無商品</p>
       </div>
-     <!-- 右下固定購物車按鈕，直接路由跳轉 -->
-    <router-link :to="{name:'UserCarts'}" class="cart-btn" title="前往購物車">
-      <div>
-      <img :src="require('@/assets/carts.png')" alt="購物車" class="cart-icon">
-      <span class="carts  bg-warning">{{ cartCount }}</span>
-      </div>
-    </router-link>
-  </div>
-  
-  
- 
 
+      <my-pagination :pages="pagination" @emit-pages="goToPage"></my-pagination>
+    </section>
+
+    <my-footer></my-footer>
+  </div>
 </template>
 
-<script>
-import MyNavbar from '@/components/MyNavbar.vue'
-import HeroCarousel from '@/components/HeroCarousel.vue'
-import MyFooter from '@/components/MyFooter.vue'
-import LoadingSpinner from '@/components/LoadingSpinner.vue'
+<script setup>
+import { computed, ref } from 'vue'
 import { API } from '@/constants/api'
+import MyNavbar from '@/components/MyNavbar.vue'
+import MyFooter from '@/components/MyFooter.vue'
+import MyPagination from '@/components/MyPagination.vue'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import { notify } from '@/components/MessageToast.vue'
+import emitter from '@/methods/emitter'
 
-export default {
-  name:'UserGoods',
-  components: { MyNavbar, MyFooter, LoadingSpinner,HeroCarousel },
-  data() {
-    return {
-      products: [],
-      categories: [
-        "北海道・東北（北部）",
-        "關東・中部（東中部）",
-        "近畿・中國・四國（西部）",
-        "九州・沖繩（南部）"
-      ],
-      categoryFilter: '',  
-      isLoading: true,
-      cartCount: 0,
-      cartQtyById: {},
-      cartQtyMin: 1,
-      cartQtyMax: 999,
-    }
-  },
-  computed: {
-    filteredProducts() {
-      return this.products.filter(p => p.category === this.categoryFilter)
-    }
-  },
-  methods: {
-    cartQty(id) {
-      const raw = this.cartQtyById[id]
-      const n =
-        typeof raw === 'number' && !Number.isNaN(raw) ? raw : this.cartQtyMin
-      return Math.min(this.cartQtyMax, Math.max(this.cartQtyMin, n))
-    },
-    adjustCartQty(id, delta) {
-      const next = this.cartQty(id) + delta
-      const clamped = Math.min(
-        this.cartQtyMax,
-        Math.max(this.cartQtyMin, next)
-      )
-      this.cartQtyById = { ...this.cartQtyById, [id]: clamped }
-    },
-    async getProducts() {
-      try {
-        const httpRes = await fetch(API.productsAll())
-        const res = await httpRes.json()
-        this.products = res.products || []
-      } catch (err) {
-        notify.error('取得商品失敗')
-      } finally {
-        this.isLoading = false
-      }
-    },
-    async addCart(id) {
-      const qty = this.cartQty(id)
-      try {
-        const httpRes = await fetch(API.cart(), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ data: { product_id: id, qty } }),
-        })
-        const res = await httpRes.json()
-        if (res?.success === false) {
-          notify.error(res.message || '加入購物車失敗')
-          return
-        }
-        notify.success(qty > 1 ? `已加入購物車（${qty} 件）` : '已加入購物車')
-        this.cartQtyById = { ...this.cartQtyById, [id]: this.cartQtyMin }
-        this.updateCartCount()
-      } catch (err) {
-        notify.error('加入購物車失敗')
-      }
-    },
-    goProductPage(id) {
-      this.$router.push(`/goods/${id}`)
-    },
-    async updateCartCount() {
-      try {
-        const httpRes = await fetch(API.cart())
-        const res = await httpRes.json()
-        const carts = res?.data?.carts || []
-        this.cartCount = carts.reduce((total, item) => total + (item.qty || 0), 0)
-      } catch (err) {
-        this.cartCount = 0
-      }
-    }
-  },
-  created() {
-    // 預設選擇第一個分類
-    if (this.categories.length > 0) {
-      this.categoryFilter = this.categories[0];
-    }
-    this.getProducts()
-    this.updateCartCount() 
+const products = ref([])
+const isLoading = ref(true)
+const cartQtyById = ref({})
+const cartQtyMin = 1
+const cartQtyMax = 999
+
+const pageSize = 6
+const currentPage = ref(1)
+
+const totalPages = computed(() => Math.max(1, Math.ceil(products.value.length / pageSize)))
+const pagination = computed(() => ({
+  current_page: currentPage.value,
+  total_pages: totalPages.value,
+}))
+const pagedProducts = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  return products.value.slice(start, start + pageSize)
+})
+
+function goToPage(page) {
+  currentPage.value = Math.min(Math.max(1, page), totalPages.value)
+}
+
+function cartQty(id) {
+  const raw = cartQtyById.value[id]
+  const n =
+    typeof raw === 'number' && !Number.isNaN(raw) ? raw : cartQtyMin
+  return Math.min(cartQtyMax, Math.max(cartQtyMin, n))
+}
+
+function adjustCartQty(id, delta) {
+  const next = cartQty(id) + delta
+  const clamped = Math.min(
+    cartQtyMax,
+    Math.max(cartQtyMin, next)
+  )
+  cartQtyById.value = { ...cartQtyById.value, [id]: clamped }
+}
+
+async function getProducts() {
+  try {
+    const httpRes = await fetch(API.productsAll())
+    const res = await httpRes.json()
+    products.value = res.products || []
+  } catch (err) {
+    notify.error('取得商品失敗')
+  } finally {
+    isLoading.value = false
   }
 }
+
+async function addCart(id) {
+  const qty = cartQty(id)
+  try {
+    const httpRes = await fetch(API.cart(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: { product_id: id, qty } }),
+    })
+    const res = await httpRes.json()
+    if (res?.success === false) {
+      notify.error(res.message || '加入購物車失敗')
+      return
+    }
+    notify.success(qty > 1 ? `已加入購物車（${qty} 件）` : '已加入購物車')
+    cartQtyById.value = { ...cartQtyById.value, [id]: cartQtyMin }
+    emitter.emit('cart-updated')
+  } catch (err) {
+    notify.error('加入購物車失敗')
+  }
+}
+
+getProducts()
 </script>
 
-
 <style scoped>
-.list-group-item.active {
-  background-color: #dc3545;
-  border-color: #dc3545;
-  color: white;
-}
-.card {
-  transition: transform 0.2s;
-}
-.card:hover {
-  transform: translateY(-5px);
+.goods-page {
+  padding: var(--s4) 0 var(--s6);
 }
 
-.container {
-  min-height: 600px; /* 視頁面設計調整 */
+.goods-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s4);
+  margin-bottom: var(--s5);
 }
 
-.cart-btn {
-  position: fixed;
-  
-  bottom: 30px;
-  right: 30px;
-  width: 100px;
-  height: 100px;
-  background-color: bisque;
-  border-radius: 50%;
+@media (max-width: 960px) {
+  .goods-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .goods-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.goods-card {
+  background: var(--paper);
+  border: 1px solid var(--hairline);
   display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  flex-direction: column;
+}
+
+.goods-photo {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  display: block;
+}
+
+.goods-body {
+  padding: var(--s3);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.goods-cat {
+  font-family: var(--latin);
+  font-size: 12px;
+  letter-spacing: .2em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.goods-title-link {
   text-decoration: none;
-  
+  color: inherit;
+}
+.goods-title-link h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 19px;
+  letter-spacing: .06em;
+  margin: 0 0 var(--s1);
 }
 
-.cart-icon {
-  width: 70%;
-  height: 70%;
-  object-fit: contain;
+.goods-desc {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+  flex: 1;
 }
 
-.carts {
- 
-  position:absolute;
-  width: 25px;
-  height: 25px;
-  border-radius:50%;
+.goods-footer {
   display: flex;
-  justify-content: center;
   align-items: center;
-  right:-9px;
-  top:-8px;
-
+  justify-content: space-between;
+  margin-top: var(--s2);
+  padding-top: var(--s2);
+  border-top: 1px solid var(--hairline);
 }
 
-
+.goods-actions {
+  display: flex;
+  gap: var(--s2);
+  margin-top: var(--s3);
+}
+.goods-detail,
+.goods-add {
+  flex: 1;
+  justify-content: center;
+}
 </style>

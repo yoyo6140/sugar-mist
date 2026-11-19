@@ -1,237 +1,209 @@
 <template>
   <loading-spinner v-if="isLoading"></loading-spinner>
 
-   
-  <div class="container mt-3" v-else>
+  <div v-else>
     <my-navbar></my-navbar>
-    <hero-carousel></hero-carousel>
-    <!-- 麵包屑 -->
-    <nav aria-label="breadcrumb" class="row mb-3">
-      <ol class="col-7   justify-content-center mt-3  breadcrumb">
-        <li class="breadcrumb-item">
-          <router-link to="/">首頁</router-link>
-        </li>
-        <li class="breadcrumb-item" v-if="product.category">
-          <router-link :to="{ name: 'UserGoods', params: { category: product.category } }">
-            {{ product.category }}
-          </router-link>
-        </li>
-        <li class="breadcrumb-item active" aria-current="page">
-          {{ product.title }}
-        </li>
-      </ol>
-    </nav>
-    <div class="row justify-content-center">
-      <!-- 左側圖片輪播 + 縮圖 -->
-      <div class="col-md-4">
-        <div id="productCarousel" class="carousel slide mb-3" data-bs-ride="carousel">
-          <div class="carousel-inner">
-            <div class="carousel-item active">
-              <img
-                :src="product.imageUrl "
-                class="d-block w-100"
-                style="height: 300px; object-fit: cover;"
-                alt="主圖"
-              >
+
+    <section class="pd-page theme-wrap">
+      <!-- 麵包屑 -->
+      <nav aria-label="breadcrumb" class="pd-crumbs">
+        <router-link :to="{ name: 'MyHome' }">首頁</router-link>
+        <span>/</span>
+        <router-link :to="{ name: 'UserGoods' }">商品</router-link>
+        <template v-if="product.category">
+          <span>/</span>
+          <span>{{ product.category }}</span>
+        </template>
+        <span>/</span>
+        <span class="current">{{ product.title }}</span>
+      </nav>
+
+      <div class="pd-grid">
+        <img class="pd-photo" :src="product.imageUrl" :alt="product.title">
+
+        <div class="pd-info">
+          <p class="kicker">{{ product.category }}</p>
+          <h1 class="pd-title">{{ product.title }}</h1>
+          <p class="pd-desc">{{ product.description }}</p>
+          <p class="pd-content">{{ product.content }}</p>
+          <span class="theme-price pd-price">NT$ {{ product.price }}</span>
+
+          <div class="pd-qty-row">
+            <span class="pd-qty-label">數量</span>
+            <div class="theme-qty">
+              <button type="button" @click="adjustQty(-1)" aria-label="減少數量">−</button>
+              <span>{{ productQty }}</span>
+              <button type="button" @click="adjustQty(1)" aria-label="增加數量">+</button>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- 右側產品資訊卡片 -->
-      <div class="col-md-5">
-        <div class="card shadow-sm p-3">
-          <h2 class="card-title">{{ product.title }}</h2>
-          <p class="text-muted mb-1">分類：{{ product.category }}</p>
-          <p class="mb-2">商品:{{ product.description }}</p>
-          <p class="text-muted small">說明：{{ product.content }}</p>
-          <p class="fs-5 mb-2">
-            <span class="text-danger fw-bold">價格:{{ product.price }} 元</span>
-          </p>
-          <label class="form-label">數量</label>
-          <div class="input-group mb-3">
-            <button
-              type="button"
-              class="btn btn-outline-secondary"
-              aria-label="減少數量"
-              @click="adjustQty(-1)"
-            >
-              −
-            </button>
-            <span class="input-group-text flex-grow-1 justify-content-center">{{
-              productQty
-            }}</span>
-            <button
-              type="button"
-              class="btn btn-outline-secondary"
-              aria-label="增加數量"
-              @click="adjustQty(1)"
-            >
-              +
-            </button>
-          </div>
-          <button class="btn btn-danger w-100" @click="addCart(product.id)">
-            加到購物車
-          </button>
+          <button type="button" class="theme-btn solid pd-add" @click="addCart(product.id)">加入購物車</button>
         </div>
       </div>
-    </div>
+    </section>
+
     <my-footer></my-footer>
-    
   </div>
-    
-  
-  <router-link :to="{name:'UserCarts'}" class="cart-btn" title="前往購物車">
-    <div>
-    <img :src="require('@/assets/carts.png')" alt="購物車" class="cart-icon">
-    <span class="carts  bg-warning">{{ cartCount }}</span>
-    </div>
-  </router-link>
 </template>
 
-<script>
+<script setup>
+import { ref } from 'vue'
+import { useRoute } from 'vue-router'
 import MyNavbar from '@/components/MyNavbar.vue'
-import HeroCarousel from '@/components/HeroCarousel.vue'
 import MyFooter from '@/components/MyFooter.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
-// ✅ 直接 import bootstrap
-import * as bootstrap from 'bootstrap'
 import { API } from '@/constants/api'
 import { notify } from '@/components/MessageToast.vue'
+import emitter from '@/methods/emitter'
 
-export default {
-  name: 'UserProduct',
-  components: { MyNavbar, MyFooter, LoadingSpinner,HeroCarousel },
-  data() {
-    return {
-      product: {
-        imagesUrl: []
-      },
-      isLoading: true,
-      cartCount: 0,
-      productQty: 1,
-      qtyMin: 1,
-      qtyMax: 999,
-    }
-  },
-  
-  methods: {
-    adjustQty(delta) {
-      const next = this.productQty + delta
-      this.productQty = Math.min(this.qtyMax, Math.max(this.qtyMin, next))
-    },
-    async getProduct() {
-      const id = this.$route.params.id
-      try {
-        const httpRes = await fetch(API.product(id))
-        const res = await httpRes.json()
-        this.product = res.product || {}
-        if (!this.product.imagesUrl) this.product.imagesUrl = []
-      } catch (err) {
-        notify.error('取得商品資料失敗')
-      } finally {
-        this.isLoading = false
-      }
-    },
-    async addCart(id) {
-      const qty = Math.min(this.qtyMax, Math.max(this.qtyMin, this.productQty))
-      try {
-        const httpRes = await fetch(API.cart(), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ data: { product_id: id, qty } }),
-        })
-        const res = await httpRes.json()
-        if (res?.success === false) {
-          notify.error(res.message || '加入購物車失敗')
-          return
-        }
-        notify.success(qty > 1 ? `已加入購物車（${qty} 件）` : '已加入購物車')
-        this.productQty = 1
-        this.updateCartCount()
-      } catch (err) {
-        notify.error('加入購物車失敗')
-      }
-    },
-    goToSlide(index) {
-      const carouselEl = document.querySelector('#productCarousel')
-      // ✅ 使用 import bootstrap 的方式
-      const carousel = bootstrap.Carousel.getInstance(carouselEl) || new bootstrap.Carousel(carouselEl)
-      carousel.to(index)
-    },
-    async updateCartCount() {
-      try {
-        const httpRes = await fetch(API.cart())
-        const res = await httpRes.json()
-        const carts = res?.data?.carts || []
-        this.cartCount = carts.reduce((total, item) => total + (item.qty || 0), 0)
-      } catch (err) {
-        this.cartCount = 0
-      }
-    }
+const route = useRoute()
 
-  },
-  created() {
-    this.getProduct()
-    this.updateCartCount() 
+const product = ref({
+  imagesUrl: []
+})
+const isLoading = ref(true)
+const productQty = ref(1)
+const qtyMin = 1
+const qtyMax = 999
+
+function adjustQty(delta) {
+  const next = productQty.value + delta
+  productQty.value = Math.min(qtyMax, Math.max(qtyMin, next))
+}
+
+async function getProduct() {
+  const id = route.params.id
+  try {
+    const httpRes = await fetch(API.product(id))
+    const res = await httpRes.json()
+    product.value = res.product || {}
+    if (!product.value.imagesUrl) product.value.imagesUrl = []
+  } catch (err) {
+    notify.error('取得商品資料失敗')
+  } finally {
+    isLoading.value = false
   }
 }
+
+async function addCart(id) {
+  const qty = Math.min(qtyMax, Math.max(qtyMin, productQty.value))
+  try {
+    const httpRes = await fetch(API.cart(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: { product_id: id, qty } }),
+    })
+    const res = await httpRes.json()
+    if (res?.success === false) {
+      notify.error(res.message || '加入購物車失敗')
+      return
+    }
+    notify.success(qty > 1 ? `已加入購物車（${qty} 件）` : '已加入購物車')
+    productQty.value = 1
+    emitter.emit('cart-updated')
+  } catch (err) {
+    notify.error('加入購物車失敗')
+  }
+}
+
+getProduct()
 </script>
 
 <style scoped>
-img {
-  height: 400px;
-  object-fit: cover;
+.pd-page {
+  padding: var(--s4) 0 var(--s6);
 }
 
-.thumb-img {
-  width: 60px;
-  height: 60px;
-  object-fit: cover;
-  cursor: pointer;
-  border: 2px solid transparent;
-  transition: border 0.2s;
-}
-
-.thumb-img:hover {
-  border-color: #ff4d4f;
-}
-
-.cart-btn {
-  position: fixed;
-  
-  bottom:60px;
-  right: 30px;
-  width: 100px;
-  height: 100px;
-  background-color: bisque;
-  border-radius: 50%;
+.pd-crumbs {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-bottom: var(--s4);
+  font-size: 13px;
+  letter-spacing: .08em;
+  color: var(--muted);
+}
+.pd-crumbs a {
+  color: var(--muted);
   text-decoration: none;
-  
+}
+.pd-crumbs a:hover {
+  color: var(--espresso);
+}
+.pd-crumbs .current {
+  color: var(--espresso);
 }
 
-.cart-icon {
-  width: 70%;
-  height: 70%;
-  object-fit: contain;
+.pd-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s6);
+  align-items: start;
 }
 
-.carts {
- 
-  position:absolute;
-  width: 25px;
-  height: 25px;
-  border-radius:50%;
+.pd-photo {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  display: block;
+}
+
+.pd-info {
+  padding-top: var(--s1);
+}
+
+.pd-info .kicker {
+  display: block;
+  margin-bottom: var(--s2);
+}
+
+.pd-title {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 32px;
+  letter-spacing: .08em;
+  line-height: 1.4;
+  margin: 0 0 var(--s3);
+}
+
+.pd-desc {
+  color: var(--espresso);
+  margin-bottom: var(--s2);
+}
+
+.pd-content {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.9;
+  margin-bottom: var(--s4);
+}
+
+.pd-price {
+  display: block;
+  font-size: 28px;
+  margin-bottom: var(--s4);
+}
+
+.pd-qty-row {
   display: flex;
-  justify-content: center;
   align-items: center;
-  right:-9px;
-  top:-8px;
+  gap: var(--s2);
+  margin-bottom: var(--s3);
+}
+.pd-qty-label {
+  font-size: 13px;
+  letter-spacing: .1em;
+  color: var(--muted);
+}
 
+.pd-add {
+  width: 100%;
+  justify-content: center;
+}
+
+@media (max-width: 960px) {
+  .pd-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
