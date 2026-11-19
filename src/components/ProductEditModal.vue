@@ -38,10 +38,8 @@
                   <label class="form-label">分類</label>
                   <select class="form-select" v-model="tempProduct.category">
                     <option value="" disabled>請選擇分類</option>
-                    <option value="北海道・東北（北部）">北海道・東北（北部）</option>
-                    <option value="關東・中部（東中部）">關東・中部（東中部）</option>
-                    <option value="近畿・中國・四國（西部）">近畿・中國・四國（西部）</option>
-                    <option value="九州・沖繩（南部）">九州・沖繩（南部）</option>
+                    <option value="手工甜點">手工甜點</option>
+                    <option value="精緻飲品">精緻飲品</option>
                   </select>
                 </div>
 
@@ -74,7 +72,7 @@
 
               <div class="mb-3 form-check">
                 <input class="form-check-input" type="checkbox"
-                      :value="1"
+                      :true-value="1" :false-value="0"
                       v-model="tempProduct.is_enabled"
                       id="is_enabled">
                 <label class="form-check-label" for="is_enabled">是否啟用</label>
@@ -198,3 +196,21 @@ async function uploadFile() {
 
 defineExpose({ showModal })
 </script>
+
+<style scoped>
+/* 是否啟用：加大並加深邊框，避免太不明顯 */
+.form-check-input {
+  width: 1.4em;
+  height: 1.4em;
+  border: 2px solid var(--espresso);
+  cursor: pointer;
+}
+.form-check-input:checked {
+  background-color: var(--espresso);
+  border-color: var(--espresso);
+}
+.form-check-label {
+  cursor: pointer;
+  margin-left: 6px;
+}
+</style>

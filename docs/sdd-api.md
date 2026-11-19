@@ -17,6 +17,8 @@
 
 ## 管理端｜產品
 
+後台管理用的商品管理功能。
+
 | 方法 | 路徑 |
 | --- | --- |
 | GET | `/api/{API_PATH}/admin/products/?page={page}` |
@@ -27,19 +29,24 @@
 
 ## 管理端｜訂單
 
+後台訂單管理。
+
 | 方法 | 路徑 |
 | --- | --- |
 | GET | `/api/{API_PATH}/admin/orders/?page={page}` |
+| PUT | `/api/{API_PATH}/admin/order/{id}` |
 | DELETE | `/api/{API_PATH}/admin/order/{id}` |
 
-## 管理端｜優惠券
+## 管理端｜文章
+
+後台文章管理，目前前端尚未串接此功能。
 
 | 方法 | 路徑 |
 | --- | --- |
-| GET | `/api/{API_PATH}/admin/coupons/?page={page}` |
-| POST | `/api/{API_PATH}/admin/coupon` |
-| PUT | `/api/{API_PATH}/admin/coupon/{id}` |
-| DELETE | `/api/{API_PATH}/admin/coupon/{id}` |
+| GET | `/api/{API_PATH}/admin/articles/?page={page}` |
+| POST | `/api/{API_PATH}/admin/article` |
+| PUT | `/api/{API_PATH}/admin/article/{id}` |
+| DELETE | `/api/{API_PATH}/admin/article/{id}` |
 
 ## 前台｜商品
 
@@ -57,12 +64,6 @@
 | PUT | `/api/{API_PATH}/cart/{id}` |
 | DELETE | `/api/{API_PATH}/cart/{id}` |
 
-## 前台｜優惠券
-
-| 方法 | 路徑 |
-| --- | --- |
-| POST | `/api/{API_PATH}/coupon` |
-
 ## 前台｜訂單與付款
 
 | 方法 | 路徑 |
@@ -70,3 +71,12 @@
 | POST | `/api/{API_PATH}/order` |
 | GET | `/api/{API_PATH}/order/{id}` |
 | POST | `/api/{API_PATH}/pay/{orderId}` |
+
+## 前台｜文章
+
+目前前端尚未串接此功能。
+
+| 方法 | 路徑 |
+| --- | --- |
+| GET | `/api/{API_PATH}/articles` |
+| GET | `/api/{API_PATH}/article/{id}` |
