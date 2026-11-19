@@ -19,15 +19,16 @@
             <div class="col-sm-4">
               <!-- 單張主圖輸入 -->
               <div class="mb-3">
-                <label class="form-label">輸入圖片網址</label>
+                <label class="form-label">輸入圖片網址 <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" v-model="tempProduct.imageUrl">
               </div>
 
               <!-- 上傳圖片 -->
               <div class="mb-3">
-                <label class="form-label">或上傳圖片</label>
+                <label class="form-label">或上傳圖片 <span class="text-danger">*</span></label>
                 <input type="file" class="form-control" ref="fileInput"  @change="uploadFile">
                 <div v-if="isUploading" class="text-info mt-1">圖片上傳中...</div>
+                <div class="form-text">網址或上傳擇一必填</div>
               </div>
 
               <!-- 顯示已上傳的多張圖片 -->
@@ -46,37 +47,39 @@
             <!-- 右側文字資訊 -->
             <div class="col-sm-8">
               <div class="mb-3">
-                <label class="form-label">標題</label>
+                <label class="form-label">標題 <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" v-model="tempProduct.title">
               </div>
 
               <div class="row gx-2">
                 <!-- 分類下拉選單 -->
                 <div class="mb-3 col-md-6">
-                  <label class="form-label">分類</label>
+                  <label class="form-label">分類 <span class="text-danger">*</span></label>
                   <select class="form-select" v-model="tempProduct.category">
                     <option value="" disabled>請選擇分類</option>
-                    <option value="北海道・東北（北部）">北海道・東北（北部）</option>
-                    <option value="關東・中部（東中部）">關東・中部（東中部）</option>
-                    <option value="近畿・中國・四國（西部）">近畿・中國・四國（西部）</option>
-                    <option value="九州・沖繩（南部）">九州・沖繩（南部）</option>
+                    <option value="手工甜點">手工甜點</option>
+                    <option value="精緻飲品">精緻飲品</option>
                   </select>
                 </div>
 
                 <div class="mb-3 col-md-6">
-                  <label class="form-label">單位</label>
+                  <label class="form-label">單位 <span class="text-danger">*</span></label>
                   <input type="text" class="form-control" v-model="tempProduct.unit">
                 </div>
               </div>
 
               <div class="row gx-2">
-                <div class="mb-3 col-md-6">
-                  <label class="form-label">原價</label>
+                <div class="mb-3 col-md-4">
+                  <label class="form-label">原價 <span class="text-danger">*</span></label>
                   <input type="number" class="form-control" v-model.number="tempProduct.origin_price">
                 </div>
-                <div class="mb-3 col-md-6">
-                  <label class="form-label">售價</label>
+                <div class="mb-3 col-md-4">
+                  <label class="form-label">售價 <span class="text-danger">*</span></label>
                   <input type="number" class="form-control" v-model.number="tempProduct.price">
+                </div>
+                <div class="mb-3 col-md-4">
+                  <label class="form-label">數量 <span class="text-danger">*</span></label>
+                  <input type="number" class="form-control" v-model.number="tempProduct.num">
                 </div>
               </div>
 
@@ -92,7 +95,7 @@
 
               <div class="mb-3 form-check">
                 <input class="form-check-input" type="checkbox"
-                      :value="1"
+                      :true-value="1" :false-value="0"
                       v-model="tempProduct.is_enabled"
                       id="is_enabled">
                 <label class="form-check-label" for="is_enabled">是否啟用</label>
@@ -153,6 +156,30 @@ function hideModal() {
 async function confirmProduct() {
   if (!tempProduct.value.imageUrl) {
     notify.warn('請先上傳圖片或輸入圖片網址')
+    return
+  }
+  if (!tempProduct.value.title) {
+    notify.warn('請輸入標題')
+    return
+  }
+  if (!tempProduct.value.category) {
+    notify.warn('請選擇分類')
+    return
+  }
+  if (!tempProduct.value.unit) {
+    notify.warn('請輸入單位')
+    return
+  }
+  if (tempProduct.value.origin_price == null || tempProduct.value.origin_price === '') {
+    notify.warn('請輸入原價')
+    return
+  }
+  if (tempProduct.value.price == null || tempProduct.value.price === '') {
+    notify.warn('請輸入售價')
+    return
+  }
+  if (tempProduct.value.num == null || tempProduct.value.num === '') {
+    notify.warn('請輸入數量')
     return
   }
 
@@ -230,5 +257,19 @@ defineExpose({ showModal })
   align-items: center;       /* 垂直置中 */
 }
 
-
+/* 是否啟用：加大並加深邊框，避免太不明顯 */
+.form-check-input {
+  width: 1.4em;
+  height: 1.4em;
+  border: 2px solid var(--espresso);
+  cursor: pointer;
+}
+.form-check-input:checked {
+  background-color: var(--espresso);
+  border-color: var(--espresso);
+}
+.form-check-label {
+  cursor: pointer;
+  margin-left: 6px;
+}
 </style>

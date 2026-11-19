@@ -34,3 +34,22 @@ function updatePage(page) {
   emit('emit-pages', page)
 }
 </script>
+
+<style scoped>
+.pagination {
+  --bs-pagination-color: var(--espresso);
+  --bs-pagination-bg: transparent;
+  --bs-pagination-border-color: var(--hairline);
+  --bs-pagination-hover-color: var(--ivory);
+  --bs-pagination-hover-bg: var(--espresso);
+  --bs-pagination-hover-border-color: var(--espresso);
+  --bs-pagination-focus-color: var(--espresso);
+  --bs-pagination-focus-bg: var(--paper);
+  --bs-pagination-active-color: var(--ivory);
+  --bs-pagination-active-bg: var(--espresso);
+  --bs-pagination-active-border-color: var(--espresso);
+  --bs-pagination-disabled-color: var(--muted);
+  --bs-pagination-disabled-bg: transparent;
+  --bs-pagination-disabled-border-color: var(--hairline);
+}
+</style>

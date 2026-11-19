@@ -26,16 +26,11 @@ export const API = {
   adminOrders: (page = 1) => apiUrl(`api/${API_PATH}/admin/orders/?page=${page}`),
   adminOrder: (id) => apiUrl(`api/${API_PATH}/admin/order/${id}`),
 
-  adminCoupons: (page = 1) => apiUrl(`api/${API_PATH}/admin/coupons/?page=${page}`),
-  adminCoupon: () => apiUrl(`api/${API_PATH}/admin/coupon`),
-  adminCouponById: (id) => apiUrl(`api/${API_PATH}/admin/coupon/${id}`),
-
   // User
   productsAll: () => apiUrl(`api/${API_PATH}/products/all`),
   product: (id) => apiUrl(`api/${API_PATH}/product/${id}`),
   cart: () => apiUrl(`api/${API_PATH}/cart`),
   cartItem: (id) => apiUrl(`api/${API_PATH}/cart/${id}`),
-  coupon: () => apiUrl(`api/${API_PATH}/coupon`),
   order: () => apiUrl(`api/${API_PATH}/order`),
   orderById: (id) => apiUrl(`api/${API_PATH}/order/${id}`),
   pay: (orderId) => apiUrl(`api/${API_PATH}/pay/${orderId}`),

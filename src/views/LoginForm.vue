@@ -1,90 +1,65 @@
 <template>
   <my-navbar></my-navbar>
-  <div class="container mt-5">
-    <div class="row justify-content-center">
-      <div class="col-md-6">
-        <div class="card shadow">
-          <div class="card-body">
-            <h3 class="card-title text-center mb-4">管理者登入</h3>
-            <form @submit.prevent="signIn">
-              <div class="mb-3">
-                <label for="username" class="form-label d-block text-start"
-                  >帳號</label
-                >
-                <input
-                  type="text"
-                  id="username"
-                  v-model="user.username"
-                  class="form-control"
-                  required
-                />
-              </div>
-              <div class="mb-3">
-                <label for="password" class="form-label d-block text-start"
-                  >密碼</label
-                >
-                <div class="input-group">
-                  <input
-                    :type="showPassword ? 'text' : 'password'"
-                    id="password"
-                    v-model="user.password"
-                    class="form-control"
-                    autocomplete="current-password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    class="btn btn-outline-secondary px-3"
-                    :aria-label="showPassword ? '隱藏密碼' : '顯示密碼'"
-                    :title="showPassword ? '隱藏密碼' : '顯示密碼'"
-                    @click="showPassword = !showPassword"
-                  >
-                    <i
-                      class="bi"
-                      :class="showPassword ? 'bi-eye-slash' : 'bi-eye'"
-                      aria-hidden="true"
-                    ></i>
-                  </button>
-                </div>
-              </div>
-              <button type="submit" class="btn btn-primary w-100">登入</button>
-              <div v-if="errorMessage" class="alert alert-danger mt-3">
-                {{ errorMessage }}
-              </div>
-            </form>
 
-            <div class="mt-4 pt-3 border-top">
-              <p class="small text-muted mb-2">測試用帳號（點一下就複製）</p>
-              <div class="d-flex flex-column gap-2">
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-secondary text-start d-flex align-items-center justify-content-between gap-2"
-                  @click="copyToClipboard(demoEmail, '已複製帳號')"
-                >
-                  <span>
-                    <span class="text-muted">帳號</span>
-                    <span class="font-monospace ms-2">{{ demoEmail }}</span>
-                  </span>
-                  <i class="bi bi-clipboard flex-shrink-0" aria-hidden="true"></i>
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-secondary text-start d-flex align-items-center justify-content-between gap-2"
-                  @click="copyToClipboard(demoPassword, '已複製密碼')"
-                >
-                  <span>
-                    <span class="text-muted">密碼</span>
-                    <span class="font-monospace ms-2">{{ demoPassword }}</span>
-                  </span>
-                  <i class="bi bi-clipboard flex-shrink-0" aria-hidden="true"></i>
-                </button>
-              </div>
-            </div>
+  <section class="login-page theme-wrap">
+    <div class="login-col">
+      <p class="kicker">Espace Admin</p>
+      <h2 class="login-title">管理者登入</h2>
+
+      <form class="login-form" @submit.prevent="signIn">
+        <div class="login-field">
+          <label for="username">帳號</label>
+          <input
+            type="text"
+            id="username"
+            v-model="user.username"
+            class="login-input"
+            required
+          >
+        </div>
+
+        <div class="login-field">
+          <label for="password">密碼</label>
+          <div class="login-password">
+            <input
+              :type="showPassword ? 'text' : 'password'"
+              id="password"
+              v-model="user.password"
+              class="login-input"
+              autocomplete="current-password"
+              required
+            >
+            <button
+              type="button"
+              class="login-eye-btn"
+              :aria-label="showPassword ? '隱藏密碼' : '顯示密碼'"
+              :title="showPassword ? '隱藏密碼' : '顯示密碼'"
+              @click="showPassword = !showPassword"
+            >
+              <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'" aria-hidden="true"></i>
+            </button>
           </div>
         </div>
+
+        <button type="submit" class="theme-btn solid login-submit">登入</button>
+
+        <p v-if="errorMessage" class="login-error">{{ errorMessage }}</p>
+      </form>
+
+      <div class="login-demo">
+        <p class="login-demo-label">測試用帳號（點一下自動填入）</p>
+        <button type="button" class="login-demo-btn" @click="fillDemoAccount">
+          <span>
+            <span class="muted">帳號</span>
+            <span class="mono">{{ demoEmail }}</span>
+            <span class="muted">密碼</span>
+            <span class="mono">{{ demoPassword }}</span>
+          </span>
+          <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
+        </button>
       </div>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup>
@@ -106,13 +81,9 @@ const user = ref({
 })
 const errorMessage = ref("")
 
-async function copyToClipboard(text, successMessage) {
-  try {
-    await navigator.clipboard.writeText(text)
-    notify.success(successMessage)
-  } catch {
-    notify.error("無法自動複製，請手動選取文字複製")
-  }
+function fillDemoAccount() {
+  user.value.username = demoEmail
+  user.value.password = demoPassword
 }
 
 async function signIn() {
@@ -137,3 +108,117 @@ async function signIn() {
   }
 }
 </script>
+
+<style scoped>
+.login-page {
+  padding: var(--s5) 0 var(--s6);
+}
+.login-col {
+  max-width: 400px;
+  margin: 0 auto;
+}
+.login-title {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 28px;
+  letter-spacing: .08em;
+  margin: var(--s1) 0 var(--s4);
+}
+
+.login-form {
+  margin-bottom: var(--s4);
+}
+.login-field {
+  margin-bottom: var(--s3);
+}
+.login-field label {
+  display: block;
+  text-align: left;
+  margin-bottom: var(--s1);
+  font-size: 13px;
+  letter-spacing: .1em;
+  color: var(--muted);
+}
+.login-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--hairline);
+  background: var(--paper);
+  color: var(--espresso);
+  font-family: var(--sans);
+  font-size: 15px;
+}
+.login-input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.login-password {
+  position: relative;
+  display: flex;
+}
+.login-password .login-input {
+  padding-right: 48px;
+}
+.login-eye-btn {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 44px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.login-eye-btn:hover {
+  color: var(--espresso);
+}
+
+.login-submit {
+  width: 100%;
+  justify-content: center;
+  margin-top: var(--s2);
+}
+
+.login-error {
+  margin-top: var(--s3);
+  font-size: 14px;
+  color: var(--rose);
+}
+
+.login-demo {
+  padding-top: var(--s3);
+  border-top: 1px solid var(--hairline);
+}
+.login-demo-label {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: var(--s2);
+}
+.login-demo-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  padding: 10px 14px;
+  border: 1px solid var(--hairline);
+  background: var(--paper);
+  color: var(--espresso);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color .2s ease;
+}
+.login-demo-btn:hover {
+  border-color: var(--gold);
+}
+.login-demo-btn .muted {
+  color: var(--muted);
+  margin-right: 6px;
+}
+.login-demo-btn .mono {
+  font-family: var(--latin);
+  margin-right: var(--s3);
+}
+</style>
